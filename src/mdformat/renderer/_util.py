@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+import functools
 import html.entities
 import re
 from typing import TYPE_CHECKING
@@ -10,20 +11,28 @@ from mdformat import codepoints
 if TYPE_CHECKING:
     from mdformat.renderer import RenderTreeNode
 
-# Regex that finds character references.
-# The reference can be either
-#   1. decimal representation, e.g. &#11;
-#   2. hex representation, e.g. &#x1e;
-#   3. HTML5 entity reference, e.g. &nbsp;
-RE_CHAR_REFERENCE = re.compile(
-    "&(?:"
-    + "#[0-9]{1,7}"
-    + "|"
-    + "#[Xx][0-9A-Fa-f]{1,6}"
-    + "|"
-    + "|".join({c.rstrip(";") for c in html.entities.html5})
-    + ");"
-)
+
+@functools.cache
+def re_char_reference() -> re.Pattern[str]:
+    """Return a regex that finds character references.
+
+    The reference can be either:
+    1. decimal representation, e.g. &#11;
+    2. hex representation, e.g. &#x1e;
+    3. HTML5 entity reference, e.g. &nbsp;
+
+    This cached function compiles the regex lazily,
+    as compilation can take over 20ms.
+    """
+    return re.compile(
+        "&(?:"
+        + "#[0-9]{1,7}"
+        + "|"
+        + "#[Xx][0-9A-Fa-f]{1,6}"
+        + "|"
+        + "|".join({c.rstrip(";") for c in html.entities.html5})
+        + ");"
+    )
 
 
 def is_tight_list(node: RenderTreeNode) -> bool:

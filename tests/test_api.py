@@ -146,3 +146,12 @@ def test_mdrenderer_no_finalize(tmp_path):
 def test_ascii_whitespace_deprecation():
     with pytest.warns(DeprecationWarning):
         mdformat.codepoints.ASCII_WHITESPACE
+
+
+def test_import_typing():
+    """Try to import mdformat.renderer.typing.
+
+    The module consists of annotation types only, so mdformat never
+    imports it at runtime. This test ensures that it still runs.
+    """
+    import mdformat.renderer.typing  # noqa: F401

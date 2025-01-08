@@ -1,10 +1,14 @@
-import json
+from __future__ import annotations
 
-from markdown_it import MarkdownIt
+import json
+from typing import TYPE_CHECKING
 
 from mdformat._cli import run
 from mdformat._conf import read_toml_opts
 from mdformat.renderer import RenderContext, RenderTreeNode
+
+if TYPE_CHECKING:
+    from markdown_it import MarkdownIt
 
 UNFORMATTED_MARKDOWN = "\n\n# A header\n\n"
 FORMATTED_MARKDOWN = "# A header\n"

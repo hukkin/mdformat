@@ -15,7 +15,6 @@ from markdown_it.rules_block.html_block import HTML_SEQUENCES
 from mdformat import codepoints
 from mdformat._conf import DEFAULT_OPTS
 from mdformat.renderer._util import (
-    RE_CHAR_REFERENCE,
     decimalify_leading,
     decimalify_trailing,
     escape_asterisk_emphasis,
@@ -27,6 +26,7 @@ from mdformat.renderer._util import (
     is_tight_list_item,
     longest_consecutive_sequence,
     maybe_add_link_brackets,
+    re_char_reference,
 )
 
 if TYPE_CHECKING:
@@ -137,7 +137,7 @@ def text(node: RenderTreeNode, context: RenderContext) -> str:
 
     # Escape "&" if it starts a sequence that can be interpreted as
     # a character reference.
-    text = RE_CHAR_REFERENCE.sub(r"\\\g<0>", text)
+    text = re_char_reference().sub(r"\\\g<0>", text)
 
     # The parser can give us consecutive newlines which can break
     # the markdown structure. Replace two or more consecutive newlines

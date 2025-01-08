@@ -5,7 +5,6 @@ __all__ = (
     "ASCII_WHITESPACE",
 )
 
-import warnings
 
 from mdformat.codepoints._unicode_punctuation import UNICODE_PUNCTUATION
 from mdformat.codepoints._unicode_whitespace import UNICODE_WHITESPACE
@@ -19,6 +18,8 @@ def __getattr__(name: str) -> frozenset[str]:
     Used during the deprecation period of `ASCII_WHITESPACE`.
     """
     if name == "ASCII_WHITESPACE":
+        import warnings
+
         warnings.warn(
             "ASCII_WHITESPACE is deprecated because CommonMark v0.30 no longer "
             "defines ASCII whitespace.",

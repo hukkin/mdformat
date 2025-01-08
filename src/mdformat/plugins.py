@@ -4,11 +4,11 @@ import argparse
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, Protocol
 
-from markdown_it import MarkdownIt
-
 from mdformat._compat import importlib_metadata
 
 if TYPE_CHECKING:
+    from markdown_it import MarkdownIt
+
     from mdformat.renderer.typing import Postprocess, Render
 
 

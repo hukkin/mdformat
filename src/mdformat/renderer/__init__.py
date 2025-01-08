@@ -13,13 +13,15 @@ from collections.abc import Mapping, MutableMapping, Sequence
 import logging
 import string
 from types import MappingProxyType
-from typing import Any
-
-from markdown_it.token import Token
+from typing import TYPE_CHECKING, Any
 
 from mdformat.renderer._context import DEFAULT_RENDERERS, WRAP_POINT, RenderContext
 from mdformat.renderer._tree import RenderTreeNode
-from mdformat.renderer.typing import Postprocess
+
+if TYPE_CHECKING:
+    from markdown_it.token import Token
+
+    from mdformat.renderer.typing import Postprocess
 
 LOGGER = logging.getLogger(__name__)
 
