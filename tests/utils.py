@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
-from mdformat._cli import run
-from mdformat._conf import read_toml_opts
 from mdformat.renderer import RenderContext, RenderTreeNode
 
 if TYPE_CHECKING:
@@ -12,11 +10,6 @@ if TYPE_CHECKING:
 
 UNFORMATTED_MARKDOWN = "\n\n# A header\n\n"
 FORMATTED_MARKDOWN = "# A header\n"
-
-
-def run_with_clear_cache(*args, **kwargs):
-    read_toml_opts.cache_clear()
-    return run(*args, **kwargs)
 
 
 class JSONFormatterPlugin:

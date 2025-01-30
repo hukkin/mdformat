@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 
 from mdformat._cli import run
-from tests.utils import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN, run_with_clear_cache
+from tests.utils import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN
 
 
 def test_cli_override(tmp_path):
@@ -97,7 +97,7 @@ def test_conf_with_stdin(tmp_path, capfd, monkeypatch):
     monkeypatch.setattr(sys, "stdin", StringIO("1. one\n1. two\n1. three"))
 
     with mock.patch("mdformat._cli.Path.cwd", return_value=tmp_path):
-        assert run_with_clear_cache(("-",)) == 0
+        assert run(("-",), cache_toml=False) == 0
     captured = capfd.readouterr()
     assert captured.out == "1. one\n2. two\n3. three\n"
 
@@ -161,11 +161,11 @@ def test_conf_no_validate(tmp_path):
         "mdformat.renderer._context.get_list_marker_type",
         return_value="?",
     ):
-        assert run_with_clear_cache((str(file_path),)) == 1
+        assert run((str(file_path),), cache_toml=False) == 1
         assert file_path.read_text() == content
 
         config_path = tmp_path / ".mdformat.toml"
         config_path.write_text("validate = false")
 
-        assert run_with_clear_cache((str(file_path),)) == 0
+        assert run((str(file_path),), cache_toml=False) == 0
         assert file_path.read_text() == "1? ordered\n"

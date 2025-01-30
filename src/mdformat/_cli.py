@@ -24,7 +24,7 @@ class RendererWarningPrinter(logging.Handler):
             sys.stderr.write(f"Warning: {record.msg}\n")
 
 
-def run(cli_args: Sequence[str]) -> int:  # noqa: C901
+def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
     arg_parser = make_arg_parser(
         mdformat.plugins._PARSER_EXTENSION_DISTS,
         mdformat.plugins._CODEFORMATTER_DISTS,
@@ -47,8 +47,9 @@ def run(cli_args: Sequence[str]) -> int:  # noqa: C901
     format_errors_found = False
     renderer_warning_printer = RendererWarningPrinter()
     for path in file_paths:
+        read_toml = read_toml_opts if cache_toml else read_toml_opts.__wrapped__
         try:
-            toml_opts, toml_path = read_toml_opts(path.parent if path else Path.cwd())
+            toml_opts, toml_path = read_toml(path.parent if path else Path.cwd())
         except InvalidConfError as e:
             print_error(str(e))
             return 1

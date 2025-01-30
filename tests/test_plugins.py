@@ -22,7 +22,6 @@ from tests.utils import (
     SuffixPostprocessPlugin,
     TablePlugin,
     TextEditorPlugin,
-    run_with_clear_cache,
 )
 
 
@@ -444,7 +443,7 @@ def test_no_codeformatters__toml(tmp_path, monkeypatch):
     file1_path.write_text(unformatted)
     config_path = tmp_path / ".mdformat.toml"
     config_path.write_text("codeformatters = []")
-    assert run_with_clear_cache((str(tmp_path),)) == 0
+    assert run((str(tmp_path),), cache_toml=False) == 0
     assert file1_path.read_text() == unformatted
 
 
@@ -464,5 +463,5 @@ def test_no_extensions__toml(tmp_path, monkeypatch):
     file1_path.write_text(unformatted)
     config_path = tmp_path / ".mdformat.toml"
     config_path.write_text("extensions = []")
-    assert run_with_clear_cache((str(tmp_path),)) == 0
+    assert run((str(tmp_path),), cache_toml=False) == 0
     assert file1_path.read_text() == unformatted
