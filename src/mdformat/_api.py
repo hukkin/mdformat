@@ -8,7 +8,6 @@ from typing import Any
 
 from mdformat._conf import DEFAULT_OPTS
 from mdformat._util import EMPTY_MAP, NULL_CTX, build_mdit, detect_newline_type
-from mdformat.renderer import MDRenderer
 
 
 def text(
@@ -21,6 +20,9 @@ def text(
     _filename: str = "",
 ) -> str:
     """Format a Markdown string."""
+    # Lazy import to improve module import time
+    from mdformat.renderer import MDRenderer
+
     with _first_pass_contextmanager:
         mdit = build_mdit(
             MDRenderer,

@@ -160,7 +160,7 @@ commands = [
 description = "Measure module import times. Tox sends mdformat output to stderr, so to filter use e.g. `tox -e benchmark-import 2> >(grep mdformat)`."
 deps = []
 commands = [
-    ["python", "-X", "importtime", "-m", "mdformat"],
+    ["python", "-X", "importtime", "-m", "mdformat", "--version"],
 ]
 
 

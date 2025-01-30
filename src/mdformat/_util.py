@@ -4,12 +4,12 @@ from collections.abc import Iterable, Mapping
 from contextlib import nullcontext
 import re
 from types import MappingProxyType
-from typing import Any, Literal
-
-from markdown_it import MarkdownIt
-from markdown_it.renderer import RendererHTML
+from typing import TYPE_CHECKING, Any, Literal
 
 import mdformat.plugins
+
+if TYPE_CHECKING:
+    from markdown_it import MarkdownIt
 
 NULL_CTX = nullcontext()
 EMPTY_MAP: MappingProxyType = MappingProxyType({})
@@ -26,6 +26,9 @@ def build_mdit(
     extensions: Iterable[str] = (),
     codeformatters: Iterable[str] = (),
 ) -> MarkdownIt:
+    # Lazy import to improve module import time
+    from markdown_it import MarkdownIt
+
     mdit = MarkdownIt(renderer_cls=renderer_cls)
     mdit.options["mdformat"] = mdformat_opts
     # store reference labels in link/image tokens
@@ -69,6 +72,9 @@ def is_md_equal(
     not a perfect solution, as there can be meaningful whitespace in
     HTML, e.g. in a <code> block.
     """
+    # Lazy import to improve module import time
+    from markdown_it.renderer import RendererHTML
+
     html_texts = {}
     mdit = build_mdit(RendererHTML, mdformat_opts=options, extensions=extensions)
     for key, text in [("md1", md1), ("md2", md2)]:

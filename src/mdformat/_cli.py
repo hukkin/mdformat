@@ -15,7 +15,6 @@ import mdformat
 from mdformat._conf import DEFAULT_OPTS, InvalidConfError, read_toml_opts
 from mdformat._util import detect_newline_type, is_md_equal
 import mdformat.plugins
-import mdformat.renderer
 
 
 class RendererWarningPrinter(logging.Handler):
@@ -127,13 +126,16 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
             path_str = "-"
             original_str = sys.stdin.read()
 
+        # Lazy import to improve module import time
+        from mdformat.renderer import LOGGER as RENDERER_LOGGER
+
         formatted_str = mdformat.text(
             original_str,
             options=opts,
             extensions=enabled_parserplugins,
             codeformatters=enabled_codeformatters,
             _first_pass_contextmanager=log_handler_applied(
-                mdformat.renderer.LOGGER, renderer_warning_printer
+                RENDERER_LOGGER, renderer_warning_printer
             ),
             _filename=path_str,
         )
