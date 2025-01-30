@@ -23,11 +23,11 @@ repos:
   hooks:
   - id: absolufy-imports
 - repo: https://github.com/PyCQA/isort
-  rev: c235f5e450b4b84e58d114ed4c589cbf454175a3  # frozen: 5.13.2
+  rev: 0a0b7a830386ba6a31c2ec8316849ae4d1b8240d  # frozen: 6.0.0
   hooks:
   - id: isort
 - repo: https://github.com/psf/black
-  rev: 1b2427a2b785cc4aac97c19bb4b9a0de063f9547  # frozen: 24.10.0
+  rev: 8a737e727ac5ab2f1d4cf5876720ed276dc8dc4b  # frozen: 25.1.0
   hooks:
   - id: black
 - repo: https://github.com/hukkin/docformatter
@@ -43,6 +43,6 @@ repos:
     - flake8-builtins
     - flake8-comprehensions
 - repo: https://github.com/pre-commit/pre-commit
-  rev: cc4a52241565440ce200666799eef70626457488  # frozen: v4.0.1
+  rev: b152e922ef11a97efe22ca7dc4f90011f0d1711c  # frozen: v4.1.0
   hooks:
   - id: validate_manifest
