@@ -54,7 +54,11 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
             print_error(str(e))
             return 1
 
-        opts: Mapping = {**DEFAULT_OPTS, **toml_opts, **cli_core_opts}
+        opts = {**DEFAULT_OPTS, **toml_opts, **cli_core_opts}
+
+        # Merge plugin options from CLI.
+        # Make a copy of opts["plugin"] to not mutate DEFAULT_OPTS or cached TOML.
+        opts["plugin"] = dict(opts["plugin"])
         for plugin_id, plugin_opts in cli_plugin_opts.items():
             if plugin_id in opts["plugin"]:
                 opts["plugin"][plugin_id] |= plugin_opts

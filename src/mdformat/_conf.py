@@ -2,20 +2,24 @@ from __future__ import annotations
 
 import functools
 from pathlib import Path
+from types import MappingProxyType
 from typing import Mapping
 
 from mdformat._compat import tomllib
+from mdformat._util import EMPTY_MAP
 
-DEFAULT_OPTS = {
-    "wrap": "keep",
-    "number": False,
-    "end_of_line": "lf",
-    "validate": True,
-    "exclude": [],
-    "plugin": {},
-    "extensions": None,
-    "codeformatters": None,
-}
+DEFAULT_OPTS = MappingProxyType(
+    {
+        "wrap": "keep",
+        "number": False,
+        "end_of_line": "lf",
+        "validate": True,
+        "exclude": (),
+        "plugin": EMPTY_MAP,
+        "extensions": None,
+        "codeformatters": None,
+    }
+)
 
 
 class InvalidConfError(Exception):
