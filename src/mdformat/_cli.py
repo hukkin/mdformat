@@ -310,11 +310,16 @@ def make_arg_parser(
                     import warnings
 
                     is_store_true = type(action) is argparse._StoreTrueAction
+                    plugin_name = (
+                        action.container.title
+                        if hasattr(action, "container")
+                        else str(plugin)
+                    )
                     text = (
-                        f"For {action.option_strings} from plugin {plugin},"
-                        "the default will always override a value configured"
-                        "in TOML. To resolve, replace `.add_argument(...,"
-                        f'action="store_{str(is_store_true).lower()}")` with'
+                        f"For {action.option_strings} from {plugin_name},"
+                        " the default will always override a value configured"
+                        " in TOML. To resolve, replace `.add_argument(...,"
+                        f' action="store_{str(is_store_true).lower()}")` with'
                         f' `(..., action="store_const", const={is_store_true})`'
                     )
                     plugin_file, plugin_line = get_source_file_and_line(action)
