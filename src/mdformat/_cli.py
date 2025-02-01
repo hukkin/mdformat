@@ -303,6 +303,27 @@ def make_arg_parser(
             plugin.add_cli_argument_group(group)
             for action in group._group_actions:
                 action.dest = f"plugin.{plugin_id}.{action.dest}"
+                if type(action) in {
+                    argparse._StoreTrueAction,
+                    argparse._StoreFalseAction,
+                }:
+                    import warnings
+
+                    is_store_true = type(action) is argparse._StoreTrueAction
+                    text = (
+                        f"For {action.option_strings} from plugin {plugin},"
+                        "the default will always override a value configured"
+                        "in TOML. To resolve, replace `.add_argument(...,"
+                        f'action="store_{str(is_store_true).lower()}")` with'
+                        f' `(..., action="store_const", const={is_store_true})`'
+                    )
+                    plugin_file, plugin_line = get_source_file_and_line(action)
+                    warnings.warn_explicit(
+                        text,
+                        UserWarning,
+                        filename=plugin_file,
+                        lineno=plugin_line,
+                    )
     return parser
 
 
