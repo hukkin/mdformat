@@ -306,13 +306,7 @@ def make_arg_parser(
                 if action.default not in {None, argparse.SUPPRESS}:
                     import warnings
 
-                    text = (
-                        f"The argument default for {action.option_strings}"
-                        f" from the '{plugin_id}' plugin, will always"
-                        " override any value configured in TOML. The only"
-                        " supported CLI defaults are `None` or `argparse."
-                        "SUPPRESS`"
-                    )
+                    text = f"The argument default for {action.option_strings} from the '{plugin_id}' plugin, will always override any value configured in TOML. The only supported CLI defaults are `None` or `argparse.SUPPRESS`"  # noqa: E501
                     plugin_file, plugin_line = get_source_file_and_line(action)
                     warnings.warn_explicit(
                         text,
