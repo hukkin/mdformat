@@ -303,7 +303,7 @@ def make_arg_parser(
             plugin.add_cli_argument_group(group)
             for action in group._group_actions:
                 action.dest = f"plugin.{plugin_id}.{action.dest}"
-                if not (action.default is None or action.default == argparse.SUPPRESS):
+                if action.default not in {None, argparse.SUPPRESS}:
                     import warnings
 
                     text = (
