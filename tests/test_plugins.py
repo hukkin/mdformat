@@ -284,6 +284,7 @@ def test_plugin_argument_warnings(monkeypatch, tmp_path):
         def add_cli_argument_group(group: argparse._ArgumentGroup) -> None:
             group.add_argument("--store-true", action="store_true")
             group.add_argument("--store-false", action="store_false")
+            group.add_argument("--store-zero", default=0)
             group.add_argument("--store-const", action="store_const", const=True)
 
     monkeypatch.setitem(PARSER_EXTENSIONS, "table", ExamplePluginWithStoreTrue)
@@ -291,11 +292,12 @@ def test_plugin_argument_warnings(monkeypatch, tmp_path):
     file_path.touch()
 
     with patch.object(MDRenderer, "render", return_value=""):
-        with pytest.warns(UserWarning) as warnings:
+        with pytest.warns(DeprecationWarning) as warnings:
             assert run([str(file_path)]) == 0
 
-    assert "store_true" in str(warnings.pop().message)
-    assert "store_false" in str(warnings.pop().message)
+    assert "--store-true" in str(warnings.pop().message)
+    assert "--store-false" in str(warnings.pop().message)
+    assert "--store-zero" in str(warnings.pop().message)
     assert len(warnings) == 0
 
 

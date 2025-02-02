@@ -303,29 +303,14 @@ def make_arg_parser(
             plugin.add_cli_argument_group(group)
             for action in group._group_actions:
                 action.dest = f"plugin.{plugin_id}.{action.dest}"
-                if type(action) in {
-                    argparse._StoreTrueAction,
-                    argparse._StoreFalseAction,
-                }:
+                if not (action.default is None or action.default == argparse.SUPPRESS):
                     import warnings
 
-                    is_store_true = type(action) is argparse._StoreTrueAction
-                    plugin_name = (
-                        action.container.title
-                        if hasattr(action, "container")
-                        else str(plugin)
-                    )
-                    text = (
-                        f"For {action.option_strings} from {plugin_name},"
-                        " the default will always override a value configured"
-                        " in TOML. To resolve, replace `.add_argument(...,"
-                        f' action="store_{str(is_store_true).lower()}")` with'
-                        f' `(..., action="store_const", const={is_store_true})`'
-                    )
+                    text = f"The argument default for {action.option_strings} from the '{plugin_id}' plugin, will always override any value configured in TOML. The only supported CLI defaults are `None` or `argparse.SUPPRESS`"  # noqa: E501
                     plugin_file, plugin_line = get_source_file_and_line(action)
                     warnings.warn_explicit(
                         text,
-                        UserWarning,
+                        DeprecationWarning,
                         filename=plugin_file,
                         lineno=plugin_line,
                     )
