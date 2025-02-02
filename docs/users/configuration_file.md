@@ -55,10 +55,19 @@ even in the case that they are directly referenced in a command line invocation.
 ```toml
 # .mdformat.toml
 exclude = [
-    "CHANGELOG.md",              # exclude a single root level file
-    "venv/**",                   # recursively exclude a root level directory
-    "**/node_modules/**",        # recursively exclude a directory at any level
-    "**/*.txt",                  # exclude all .txt files
-    "**/*.m[!d]", "**/*.[!m]d",  # exclude all files that are not suffixed .md
+    # exclude a single root level file
+    "CHANGELOG.md",
+
+    # recursively exclude a root level directory
+    "venv/**",
+
+    # recursively exclude a directory at any level
+    "**/node_modules/**",
+
+    # exclude all .txt files
+    "**/*.txt",
+
+    # exclude all files that are not suffixed .md
+    "**/?", "**/??", "**/???", "**/*[!.]??", "**/*[!m]?", "**/*[!d]",
 ]
 ```
