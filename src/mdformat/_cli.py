@@ -307,7 +307,7 @@ def make_arg_parser(
                     import warnings
 
                     text = f"The argument default for {action.option_strings} from the '{plugin_id}' plugin, will always override any value configured in TOML. The only supported CLI defaults are `None` or `argparse.SUPPRESS`"  # noqa: E501
-                    plugin_file, plugin_line = get_source_file_and_line(action)
+                    plugin_file, plugin_line = get_source_file_and_line(plugin)
                     warnings.warn_explicit(
                         text,
                         DeprecationWarning,
