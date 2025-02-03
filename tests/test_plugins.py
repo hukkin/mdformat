@@ -292,7 +292,7 @@ def test_plugin_argument_warnings(monkeypatch, tmp_path):
     file_path.touch()
 
     with patch.object(MDRenderer, "render", return_value=""):
-        with pytest.warns(DeprecationWarning) as warnings:
+        with pytest.warns(UserWarning) as warnings:
             assert run([str(file_path)]) == 0
 
     assert "--store-true" in str(warnings.pop().message)
