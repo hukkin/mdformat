@@ -308,8 +308,8 @@ def make_arg_parser(
 
                     plugin_file, plugin_line = get_source_file_and_line(plugin)
                     warnings.warn_explicit(
-                        f"The `default` ({action.default}) for {action.option_strings} from the '{plugin_id}' plugin, will always override any value configured in TOML. The only supported CLI defaults are `None` or `argparse.SUPPRESS`. To resolve, consider refactoring to `.add_argument(..., default=None)` ",  # noqa: E501
-                        UserWarning,
+                        f"The `default` ({action.default!r}) for {action.option_strings!r} from the {plugin_id!r} plugin, will always override any value configured in TOML. The only supported CLI defaults are `None` or `argparse.SUPPRESS`. To resolve, consider refactoring to `.add_argument(..., default=None)` ",  # noqa: E501
+                        DeprecationWarning,
                         filename=plugin_file,
                         lineno=plugin_line,
                     )
