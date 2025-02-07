@@ -257,6 +257,7 @@ def make_arg_parser(
             help="exclude files that match the Unix-style glob pattern "
             "(multiple allowed)",
         )
+    parser.add_argument("--toml_file", help="path to desired toml config file")
     extensions_group = parser.add_mutually_exclusive_group()
     extensions_group.add_argument(
         "--extensions",
@@ -290,10 +291,6 @@ def make_arg_parser(
         const=(),
         dest="codeformatters",
         help=argparse.SUPPRESS,
-    )
-    codeformatters_group.add_argument(
-        "--toml_file",
-        help="path to desired toml config file",
     )
     for plugin in parser_extensions.values():
         if hasattr(plugin, "add_cli_options"):
