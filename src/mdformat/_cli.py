@@ -47,6 +47,8 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
     renderer_warning_printer = RendererWarningPrinter()
     for path in file_paths:
         read_toml = read_toml_opts if cache_toml else read_toml_opts.__wrapped__
+        if cli_opts.get("toml_file"):
+            path = Path(cli_opts["toml_file"])
         try:
             toml_opts, toml_path = read_toml(path.parent if path else Path.cwd())
         except InvalidConfError as e:
@@ -282,6 +284,10 @@ def make_arg_parser(
         const=(),
         dest="codeformatters",
         help=argparse.SUPPRESS,
+    )
+    codeformatters_group.add_argument(
+        "--toml_file",
+        help="path to desired toml config file",
     )
     for plugin in parser_extensions.values():
         if hasattr(plugin, "add_cli_options"):
