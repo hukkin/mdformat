@@ -516,11 +516,14 @@ def test_no_extensions(tmp_path, monkeypatch):
 
 
 def test_cli_toml(tmp_path):
-    config_path = tmp_path / "cli.toml"
-    config_path.write_text("wrap = 20")
+    _wrap_num = 5
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text(f"wrap = {_wrap_num}")
 
     file_path = tmp_path / "test_markdown.md"
-    file_path.write_text("".join(["x" * 20, "o" * 20, "w" * 20, "p" * 20]))
+    file_path.write_text(
+        " ".join(["x" * _wrap_num, "o" * _wrap_num, "w" * _wrap_num, "p" * _wrap_num])
+    )
 
     assert run([str(file_path), f"--toml_file={config_path}"]) == 0
-    assert file_path.read_text() == "\n".join(["x" * 20, "o" * 20, "w" * 20, "p" * 20])
+    assert file_path.read_text() == "xxxxx\nooooo\nwwwww\nppppp\n"
