@@ -516,7 +516,7 @@ def test_no_extensions(tmp_path, monkeypatch):
 
 
 def test_cli_toml(tmp_path):
-    config_path = tmp_path / "sub/.mdformat.toml"
+    config_path = tmp_path / "cli.toml"
     config_path.write_text("wrap = 20")
 
     file_path = tmp_path / "test_markdown.md"
