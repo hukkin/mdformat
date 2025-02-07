@@ -47,10 +47,16 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
     renderer_warning_printer = RendererWarningPrinter()
     for path in file_paths:
         read_toml = read_toml_opts if cache_toml else read_toml_opts.__wrapped__
+
+        conf_dir = Path.cwd()
+        if path:
+            conf_dir = path.parent
         if cli_opts.get("toml_file"):
-            path = Path(cli_opts["toml_file"])
+            cli_toml_file = resolve_cli_toml_file(cli_opts)
+            conf_dir = cli_toml_file.parent
+
         try:
-            toml_opts, toml_path = read_toml(path.parent if path else Path.cwd())
+            toml_opts, toml_path = read_toml(conf_dir)
         except InvalidConfError as e:
             print_error(str(e))
             return 1
@@ -509,3 +515,18 @@ def get_source_file_and_line(obj: object) -> tuple[str, int]:
     except (OSError, TypeError):  # pragma: no cover
         lineno = 0
     return filename, lineno
+
+
+def resolve_cli_toml_file(cli_opts):
+    cli_toml: str = cli_opts["toml_file"]
+
+    if cli_toml[0].isalnum() or cli_toml[0] in ["."]:
+        toml_file = (Path.cwd() / cli_toml).absolute()
+    elif cli_toml[0] == "~":
+        toml_file = (Path.home() / cli_toml[1:]).absolute()
+    else:
+        toml_file = Path(cli_toml).absolute()
+
+    if not toml_file.is_file():
+        raise InvalidPath(toml_file)
+    return toml_file
