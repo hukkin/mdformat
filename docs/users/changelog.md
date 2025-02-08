@@ -3,6 +3,11 @@
 This log documents all Python API or CLI breaking backwards incompatible changes.
 Note that there is currently no guarantee for a stable Markdown formatting style across versions.
 
+## Develop
+
+- Use consistent encoding when reading from stdin.
+  It is now read with UTF-8 encoding, consistent with the encoding used in writing.
+
 ## 0.7.22
 
 - Performance
