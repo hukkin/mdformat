@@ -12,6 +12,8 @@ formatted Markdown should yield a result that is visually identical to the unfor
 Mdformat CLI includes a safety check that will error and refuse to apply changes to a file
 if Markdown AST is not equal before and after formatting.
 
+Mdformat reads and writes all files with Utf-8 encoding.
+
 ## Headings
 
 For consistency, only ATX headings are used.
