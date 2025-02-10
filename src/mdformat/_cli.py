@@ -52,7 +52,7 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
         if path:
             conf_dir = path.parent
         if cli_opts.get("toml_file"):
-            cli_toml_file = resolve_cli_toml_file(cli_opts)
+            cli_toml_file = resolve_cli_toml_file(cli_opts["toml_file"])
             conf_dir = cli_toml_file.parent
 
         try:
@@ -514,15 +514,14 @@ def get_source_file_and_line(obj: object) -> tuple[str, int]:
     return filename, lineno
 
 
-def resolve_cli_toml_file(cli_opts):
-    cli_toml: str = cli_opts["toml_file"]
+def resolve_cli_toml_file(cli_toml_arg: str) -> Path:
+    toml_file = Path(cli_toml_arg).absolute()
 
-    if cli_toml[0].isalnum() or cli_toml[0] in ["."]:
-        toml_file = (Path.cwd() / cli_toml).absolute()
-    elif cli_toml[0] == "~":
-        toml_file = (Path.home() / cli_toml[1:]).absolute()
-    else:
-        toml_file = Path(cli_toml).absolute()
+    if cli_toml_arg[0].isalnum() or (cli_toml_arg[0] in ["."]):
+        toml_file = (Path.cwd() / cli_toml_arg).absolute()
+
+    if cli_toml_arg[0] == "~":
+        toml_file = (Path.home() / cli_toml_arg.replace("~", "")).absolute()
 
     if not toml_file.is_file():
         raise InvalidPath(toml_file)
