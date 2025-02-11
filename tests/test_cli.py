@@ -530,7 +530,7 @@ def test_cli_toml(tmp_path):
     assert file_path.read_text() == "xxxxx\nooooo\nwwwww\nppppp\n"
 
 
-def test_cli_toml_alpanum(tmp_path):
+def test_cli_toml_alphanum(tmp_path):
     config_path = "1234/.mdformat.toml"
 
     file_path = tmp_path / "test_markdown.md"
