@@ -3,10 +3,11 @@
 This log documents all Python API or CLI breaking backwards incompatible changes.
 Note that there is currently no guarantee for a stable Markdown formatting style across versions.
 
-## Develop
+## **unreleased**
 
-- Use consistent encoding when reading from stdin.
-  It is now read with UTF-8 encoding, consistent with the encoding used in writing.
+- Fixed
+  - Read UTF-8 from standard input on all systems.
+    Thank you, [Christopher Prohm](https://github.com/chmp), for the PR.
 
 ## 0.7.22
 
