@@ -1,4 +1,3 @@
-from io import StringIO
 import os
 import sys
 from unittest.mock import patch
