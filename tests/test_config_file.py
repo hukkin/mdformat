@@ -1,4 +1,3 @@
-from io import StringIO
 import sys
 from unittest import mock
 
@@ -90,11 +89,11 @@ def test_invalid_conf_value(bad_conf, conf_key, tmp_path, capsys):
     assert f"Invalid '{conf_key}' value" in captured.err
 
 
-def test_conf_with_stdin(tmp_path, capfd, monkeypatch):
+def test_conf_with_stdin(tmp_path, capfd, patch_stdin):
     config_path = tmp_path / ".mdformat.toml"
     config_path.write_text("number = true")
 
-    monkeypatch.setattr(sys, "stdin", StringIO("1. one\n1. two\n1. three"))
+    patch_stdin("1. one\n1. two\n1. three")
 
     with mock.patch("mdformat._cli.Path.cwd", return_value=tmp_path):
         assert run(("-",), cache_toml=False) == 0

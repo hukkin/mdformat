@@ -132,7 +132,7 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
             original_str = path.read_bytes().decode()
         else:
             path_str = "-"
-            original_str = sys.stdin.read()
+            original_str = sys.stdin.buffer.read().decode()
 
         # Lazy import to improve module import time
         from mdformat.renderer import LOGGER as RENDERER_LOGGER

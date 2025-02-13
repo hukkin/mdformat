@@ -1,4 +1,3 @@
-from io import StringIO
 import os
 from pathlib import Path
 import sys
@@ -144,8 +143,8 @@ def test_formatter_plugin(tmp_path, monkeypatch):
     assert file_path.read_text() == "```lang\ndummy\n```\n"
 
 
-def test_dash_stdin(capfd, monkeypatch):
-    monkeypatch.setattr(sys, "stdin", StringIO(UNFORMATTED_MARKDOWN))
+def test_dash_stdin(capfd, patch_stdin):
+    patch_stdin(UNFORMATTED_MARKDOWN)
     assert run(("-",)) == 0
     captured = capfd.readouterr()
     assert captured.out == FORMATTED_MARKDOWN
@@ -299,8 +298,8 @@ def test_eol__keep_crlf(tmp_path):
     assert file_path.read_bytes() == b"Oi\r\n"
 
 
-def test_eol__crlf_stdin(capfd, monkeypatch):
-    monkeypatch.setattr(sys, "stdin", StringIO("Oi\n"))
+def test_eol__crlf_stdin(capfd, patch_stdin):
+    patch_stdin("Oi\n")
     assert run(["-", "--end-of-line=crlf"]) == 0
     captured = capfd.readouterr()
     assert captured.out == "Oi\r\n"
