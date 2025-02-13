@@ -148,7 +148,7 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
                 print_error(f'File "{path_str}" is not formatted.')
         else:
             changes_ast = any(
-                getattr(plugin, 'CHANGES_AST', False)
+                getattr(plugin, "CHANGES_AST", False)
                 for plugin in enabled_parserplugins.values()
             )
             if (
