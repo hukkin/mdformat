@@ -1,4 +1,3 @@
-from io import StringIO
 import sys
 from unittest import mock
 
