@@ -107,7 +107,7 @@ Explore mdformat's [GitHub topic](https://github.com/topics/mdformat) for more.
   </tr>
   <tr>
     <td><a href="https://github.com/KyleKing/mdformat-admon">mdformat-admon</a></td>
-    <td><code>admonition</code></td>
+    <td><code>admon</code></td>
     <td>Adds support for <a href="https://python-markdown.github.io/extensions/admonition/">python-markdown</a> admonitions</td>
   </tr>
   <tr>
