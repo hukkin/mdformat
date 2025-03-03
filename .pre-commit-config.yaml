@@ -23,7 +23,7 @@ repos:
   hooks:
   - id: absolufy-imports
 - repo: https://github.com/PyCQA/isort
-  rev: 0a0b7a830386ba6a31c2ec8316849ae4d1b8240d  # frozen: 6.0.0
+  rev: c8ab4a5b21bac924d106e3103dd7c979fdd0f9bc  # frozen: 6.0.1
   hooks:
   - id: isort
 - repo: https://github.com/psf/black
@@ -35,7 +35,7 @@ repos:
   hooks:
   - id: docformatter
 - repo: https://github.com/PyCQA/flake8
-  rev: e43806be3607110919eff72939fda031776e885a  # frozen: 7.1.1
+  rev: bddd87797f8dfc07d2a10c894776018d9bec590b  # frozen: 7.1.2
   hooks:
   - id: flake8
     additional_dependencies:
