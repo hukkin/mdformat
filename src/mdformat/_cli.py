@@ -213,8 +213,8 @@ def make_arg_parser(
         "--check", action="store_true", help="do not apply changes to files"
     )
     parser.add_argument(
-        "--exit-non-zero-on-format", 
-        action="store_true", 
+        "--exit-non-zero-on-format",
+        action="store_true",
         help="return non-zero if files are modified",
     )
     parser.add_argument(
