@@ -18,7 +18,7 @@ Command line interface arguments take precedence over the configuration file.
 # behavior.
 #
 wrap = "keep"         # options: {"keep", "no", INTEGER}
-number = false        # options: {false, true}
+number = false        # options: {false (all ones), true (consecutive)}
 end_of_line = "lf"    # options: {"lf", "crlf", "keep"}
 validate = true       # options: {false, true}
 # extensions = [      # options: a list of enabled extensions (default: all installed are enabled)
