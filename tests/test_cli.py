@@ -26,6 +26,13 @@ def test_format(tmp_path):
     assert file_path.read_text() == FORMATTED_MARKDOWN
 
 
+def test_format__exit_non_zero(tmp_path):
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text(UNFORMATTED_MARKDOWN)
+    assert run((str(file_path),), "--exit-non-zero-on-format") == 1
+    assert file_path.read_text() == FORMATTED_MARKDOWN
+
+
 def test_format__folder(tmp_path):
     file_path_1 = tmp_path / "test_markdown1.md"
     file_path_2 = tmp_path / "test_markdown2.md"
@@ -34,6 +41,19 @@ def test_format__folder(tmp_path):
     file_path_2.write_text(UNFORMATTED_MARKDOWN)
     file_path_3.write_text(UNFORMATTED_MARKDOWN)
     assert run((str(tmp_path),)) == 0
+    assert file_path_1.read_text() == FORMATTED_MARKDOWN
+    assert file_path_2.read_text() == FORMATTED_MARKDOWN
+    assert file_path_3.read_text() == UNFORMATTED_MARKDOWN
+
+
+def test_format__folder_exit_non_zero(tmp_path):
+    file_path_1 = tmp_path / "test_markdown1.md"
+    file_path_2 = tmp_path / "test_markdown2.md"
+    file_path_3 = tmp_path / "not_markdown3"
+    file_path_1.write_text(UNFORMATTED_MARKDOWN)
+    file_path_2.write_text(UNFORMATTED_MARKDOWN)
+    file_path_3.write_text(UNFORMATTED_MARKDOWN)
+    assert run((str(tmp_path),), "--exit-non-zero-on-format") == 1
     assert file_path_1.read_text() == FORMATTED_MARKDOWN
     assert file_path_2.read_text() == FORMATTED_MARKDOWN
     assert file_path_3.read_text() == UNFORMATTED_MARKDOWN
