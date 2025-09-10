@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import functools
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping
 
 from mdformat._compat import tomllib
 from mdformat._util import EMPTY_MAP
@@ -32,7 +32,7 @@ class InvalidConfError(Exception):
     """
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def read_toml_opts(conf_dir: Path) -> tuple[Mapping, Path | None]:
     conf_path = conf_dir / ".mdformat.toml"
     if not conf_path.is_file():

@@ -452,7 +452,7 @@ def wrap_paragraphs(paragraphs: Iterable[str]) -> str:
 @contextlib.contextmanager
 def log_handler_applied(
     logger: logging.Logger, handler: logging.Handler
-) -> Generator[None, None, None]:
+) -> Generator[None]:
     logger.addHandler(handler)
     try:
         yield

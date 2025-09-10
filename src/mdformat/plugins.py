@@ -1,8 +1,7 @@
 from __future__ import annotations
 
+import importlib.metadata
 from typing import TYPE_CHECKING, Any, Protocol
-
-from mdformat._compat import importlib_metadata
 
 if TYPE_CHECKING:
     import argparse
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def _load_entrypoints(
-    eps: importlib_metadata.EntryPoints,
+    eps: importlib.metadata.EntryPoints,
 ) -> tuple[dict[str, Any], dict[str, tuple[str, list[str]]]]:
     loaded_ifaces: dict[str, Any] = {}
     dist_versions: dict[str, tuple[str, list[str]]] = {}
@@ -95,7 +94,7 @@ def __getattr__(name: str) -> Mapping[str, Any]:
     """
     if name in {"CODEFORMATTERS", "_CODEFORMATTER_DISTS"}:
         formatters, formatter_dists = _load_entrypoints(
-            importlib_metadata.entry_points(group="mdformat.codeformatter")
+            importlib.metadata.entry_points(group="mdformat.codeformatter")
         )
         # Cache the values in this module for next time, so that `__getattr__`
         # is only called once per `name`.
@@ -105,7 +104,7 @@ def __getattr__(name: str) -> Mapping[str, Any]:
         return formatters if name == "CODEFORMATTERS" else formatter_dists
     if name in {"PARSER_EXTENSIONS", "_PARSER_EXTENSION_DISTS"}:
         extensions, extension_dists = _load_entrypoints(
-            importlib_metadata.entry_points(group="mdformat.parser_extension")
+            importlib.metadata.entry_points(group="mdformat.parser_extension")
         )
         # Cache the value in this module for next time, so that `__getattr__`
         # is only called once per `name`.

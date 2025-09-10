@@ -1,4 +1,5 @@
 import argparse
+import importlib.metadata
 from textwrap import dedent
 from unittest.mock import patch
 
@@ -7,7 +8,6 @@ import pytest
 
 import mdformat
 from mdformat._cli import run
-from mdformat._compat import importlib_metadata
 from mdformat.plugins import (
     _PARSER_EXTENSION_DISTS,
     CODEFORMATTERS,
@@ -439,7 +439,7 @@ Name: mdformat-gfm
 Version: 0.3.6
 """
     )
-    distro = importlib_metadata.PathDistribution(dist_info_path)
+    distro = importlib.metadata.PathDistribution(dist_info_path)
     entrypoints = distro.entry_points
 
     loaded_eps, dist_infos = _load_entrypoints(entrypoints)
