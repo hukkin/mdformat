@@ -631,7 +631,7 @@ class RenderContext(NamedTuple):
     env: MutableMapping
 
     @contextmanager
-    def indented(self, width: int) -> Generator[None, None, None]:
+    def indented(self, width: int) -> Generator[None]:
         self.env["indent_width"] += width
         try:
             yield
