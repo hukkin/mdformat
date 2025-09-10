@@ -389,10 +389,7 @@ def is_excluded(  # pragma: >=3.13 cover
     except ValueError:
         return False
 
-    return any(
-        relative_path.full_match(pattern)  # type: ignore[attr-defined]
-        for pattern in patterns
-    )
+    return any(relative_path.full_match(pattern) for pattern in patterns)
 
 
 def _normalize_path(path: Path) -> Path:
