@@ -16,11 +16,11 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.13'
 
     - name: Installation (deps and package)
       run: |
-        pip install . pre-commit mypy==1.13.0 -r tests/requirements.txt
+        pip install . pre-commit mypy==1.17.1 -r tests/requirements.txt
 
     - name: run linters
       run: |
