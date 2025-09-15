@@ -7,7 +7,7 @@ import pytest
 import mdformat
 from mdformat._util import is_md_equal
 
-SPECTESTS_PATH = Path(__file__).parent / "data" / "commonmark_spec_v0.30.json"
+SPECTESTS_PATH = Path(__file__).parent / "data" / "commonmark_spec_v0.31.2.json"
 SPECTESTS_CASES = tuple(
     {"name": str(entry["example"]), "md": entry["markdown"]}
     for entry in json.loads(SPECTESTS_PATH.read_text(encoding="utf-8"))
