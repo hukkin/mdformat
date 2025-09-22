@@ -1,3 +1,4 @@
+blank_issues_enabled: false
 contact_links:
   - name: Why does Mdformat use backslash to escape my Markdown engine specific syntax? ⁉️
     url: https://github.com/hukkin/mdformat?tab=readme-ov-file#why-does-mdformat-backslash-escape-special-syntax-specific-to-mkdocs--hugo--obsidian--github--some-other-markdown-engine
