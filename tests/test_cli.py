@@ -1,11 +1,12 @@
 import os
+from pathlib import Path
 import sys
 from unittest.mock import patch
 
 import pytest
 
 import mdformat
-from mdformat._cli import get_plugin_info_str, run, wrap_paragraphs
+from mdformat._cli import InvalidPath, get_plugin_info_str, run, wrap_paragraphs
 from mdformat.plugins import CODEFORMATTERS, PARSER_EXTENSIONS
 from tests.utils import (
     FORMATTED_MARKDOWN,
@@ -512,3 +513,56 @@ def test_no_extensions(tmp_path, monkeypatch):
     file_path.write_text(original_md)
     assert run((str(file_path), "--no-extensions")) == 0
     assert file_path.read_text() == original_md
+
+
+def test_cli_toml(tmp_path):
+    _wrap_num = 5
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text(f"wrap = {_wrap_num}")
+
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text(
+        " ".join(["x" * _wrap_num, "o" * _wrap_num, "w" * _wrap_num, "p" * _wrap_num])
+    )
+
+    assert run([str(file_path), f"--toml_file={config_path}"]) == 0
+    assert file_path.read_text() == "xxxxx\nooooo\nwwwww\nppppp\n"
+
+
+def test_cli_toml_alphanum(tmp_path):
+    config_path = "1234/.mdformat.toml"
+
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text("text")
+
+    with pytest.raises(InvalidPath) as except_info:
+        run([str(file_path), f"--toml_file={config_path}"])
+    assert except_info.typename == "InvalidPath"
+
+    err_value = except_info.value
+    assert config_path in err_value.path.__str__()
+
+
+def test_cli_toml_home(tmp_path):
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text("text")
+
+    with pytest.raises(InvalidPath) as except_info:
+        run([str(file_path), "--toml_file=~"])
+    assert except_info.typename == "InvalidPath"
+
+    err_value = except_info.value
+    assert Path.home() == err_value.path
+
+
+def test_cli_toml_not_exists(tmp_path, capsys):
+    config_path = tmp_path / ".mdformat.toml"
+
+    file_path = tmp_path / "test_markdown.md"
+
+    with pytest.raises(SystemExit) as exc_info:
+        run([str(file_path), f"--toml_file={config_path}"])
+    assert exc_info.value.code == 2
+
+    captured = capsys.readouterr()
+    assert "does not exist" in captured.err
