@@ -23,11 +23,11 @@ repos:
   hooks:
   - id: absolufy-imports
 - repo: https://github.com/PyCQA/isort
-  rev: c8ab4a5b21bac924d106e3103dd7c979fdd0f9bc  # frozen: 6.0.1
+  rev: 0a09c783808cfe77bb3269250f663ff733d23302  # frozen: 7.0.0
   hooks:
   - id: isort
-- repo: https://github.com/psf/black
-  rev: 8a737e727ac5ab2f1d4cf5876720ed276dc8dc4b  # frozen: 25.1.0
+- repo: https://github.com/psf/black-pre-commit-mirror
+  rev: fe95161893684893d68b1225356702ca71f8d388  # frozen: 25.9.0
   hooks:
   - id: black
 - repo: https://github.com/hukkin/docformatter
