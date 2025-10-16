@@ -3,11 +3,18 @@
 This log documents all Python API or CLI breaking backwards incompatible changes.
 Note that there is currently no guarantee for a stable Markdown formatting style across versions.
 
-## **unreleased**
+## 1.0.0
 
 - Removed
+  - Python 3.9 support
   - `mdformat.codepoints.ASCII_WHITESPACE` (deprecated since 0.7.20)
   - `mdformat.plugins.ParserExtensionInterface.add_cli_options` (deprecated since 0.7.19)
+- Deprecated
+  - Default values other than `None` or `argparse.SUPPRESS` in CLI options added by plugins.
+    Thank you, [Kyle King](https://github.com/KyleKing), for the PR.
+- Added
+  - markdown-it-py v4 support
+  - CommonMark 0.31.2 support
 - Fixed
   - Read UTF-8 from standard input on all systems.
     Thank you, [Christopher Prohm](https://github.com/chmp), for the PR.
