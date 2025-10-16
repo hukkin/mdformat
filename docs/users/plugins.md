@@ -127,7 +127,7 @@ Explore mdformat's [GitHub topic](https://github.com/topics/mdformat) for more.
   </tr>
   <tr>
     <td><a href="https://github.com/hukkin/mdformat-gfm">mdformat-gfm</a></td>
-    <td><code>gfm</code></td>
+    <td><code>gfm</code>, <code>tables</code></td>
     <td>Changes target specification to GitHub Flavored Markdown (GFM)</td>
   </tr>
   <tr>
@@ -144,11 +144,6 @@ Explore mdformat's [GitHub topic](https://github.com/topics/mdformat) for more.
     <td><a href="https://github.com/executablebooks/mdformat-myst">mdformat-myst</a></td>
     <td><code>myst</code></td>
     <td>Changes target specification to <a href="https://myst-parser.readthedocs.io/en/latest/using/syntax.html">MyST</a></td>
-  </tr>
-  <tr>
-    <td><a href="https://github.com/hukkin/mdformat-tables">mdformat-tables</a></td>
-    <td><code>tables</code></td>
-    <td>Adds support for GitHub Flavored Markdown style tables</td>
   </tr>
   <tr>
     <td><a href="https://github.com/hukkin/mdformat-toc">mdformat-toc</a></td>
