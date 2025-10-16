@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 
@@ -10,7 +10,8 @@ description = "CommonMark compliant Markdown formatter"
 authors = [
     { name = "Taneli Hukkinen", email = "hukkin@users.noreply.github.com" },
 ]
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
     'markdown-it-py>=1,<5',
@@ -19,7 +20,6 @@ dependencies = [
 readme = "README.md"
 classifiers = [
     "Environment :: Console",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
