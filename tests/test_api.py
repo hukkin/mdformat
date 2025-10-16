@@ -143,11 +143,6 @@ def test_mdrenderer_no_finalize(tmp_path):
     assert finalized == unfinalized + "\n\n[gl ref]: https://gitlab.com\n"
 
 
-def test_ascii_whitespace_deprecation():
-    with pytest.warns(DeprecationWarning):
-        mdformat.codepoints.ASCII_WHITESPACE
-
-
 def test_import_typing():
     """Try to import mdformat.renderer.typing.
 

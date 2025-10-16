@@ -5,6 +5,8 @@ Note that there is currently no guarantee for a stable Markdown formatting style
 
 ## **unreleased**
 
+- Removed
+  - `mdformat.codepoints.ASCII_WHITESPACE` (deprecated since 0.7.20)
 - Fixed
   - Read UTF-8 from standard input on all systems.
     Thank you, [Christopher Prohm](https://github.com/chmp), for the PR.
