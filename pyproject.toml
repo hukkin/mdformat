@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdformat"
-version = "0.7.22"  # DO NOT EDIT THIS LINE MANUALLY. LET bump2version UTILITY DO IT
+version = "1.0.0"  # DO NOT EDIT THIS LINE MANUALLY. LET bump2version UTILITY DO IT
 description = "CommonMark compliant Markdown formatter"
 authors = [
     { name = "Taneli Hukkinen", email = "hukkin@users.noreply.github.com" },

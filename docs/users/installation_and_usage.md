@@ -68,7 +68,7 @@ Add the following to your project's `.pre-commit-config.yaml` to enable this:
 
 ```yaml
 - repo: https://github.com/hukkin/mdformat
-  rev: 0.7.22  # Use the ref you want to point at
+  rev: 1.0.0  # Use the ref you want to point at
   hooks:
   - id: mdformat
     # Optionally add plugins
