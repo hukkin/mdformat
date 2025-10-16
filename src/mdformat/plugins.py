@@ -52,14 +52,6 @@ class ParserExtensionInterface(Protocol):
     POSTPROCESSORS: Mapping[str, Postprocess]
 
     @staticmethod
-    def add_cli_options(parser: argparse.ArgumentParser) -> None:
-        """DEPRECATED - use `add_cli_argument_group` instead.
-
-        Add options to the mdformat CLI, to be stored in
-        mdit.options["mdformat"] (optional)
-        """
-
-    @staticmethod
     def add_cli_argument_group(group: argparse._ArgumentGroup) -> None:
         """Add an argument group to mdformat CLI and add arguments to it.
 

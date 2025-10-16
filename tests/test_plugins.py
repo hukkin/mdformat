@@ -172,39 +172,6 @@ def test_table(monkeypatch):
     )
 
 
-class ExamplePluginWithCli:
-    """A plugin that adds CLI options."""
-
-    @staticmethod
-    def update_mdit(mdit: MarkdownIt):
-        mdit.enable("table")
-
-    @staticmethod
-    def add_cli_options(parser: argparse.ArgumentParser) -> None:
-        parser.add_argument("--o1", type=str)
-        parser.add_argument("--o2", type=str, default="a")
-        parser.add_argument("--o3", dest="arg_name", type=int)
-
-
-def test_cli_options(monkeypatch, tmp_path):
-    """Test that CLI arguments added by plugins are correctly added to the
-    options dict."""
-    monkeypatch.setitem(PARSER_EXTENSIONS, "table", ExamplePluginWithCli)
-    file_path = tmp_path / "test_markdown.md"
-    file_path.touch()
-
-    with patch.object(MDRenderer, "render", return_value="") as mock_render:
-        assert run((str(file_path), "--o1", "other", "--o3", "4")) == 0
-
-    (call_,) = mock_render.call_args_list
-    posargs = call_[0]
-    # Options is the second positional arg of MDRender.render
-    opts = posargs[1]
-    assert opts["mdformat"]["o1"] == "other"
-    assert opts["mdformat"]["o2"] == "a"
-    assert opts["mdformat"]["arg_name"] == 4
-
-
 class ExamplePluginWithGroupedCli:
     """A plugin that adds CLI options."""
 
