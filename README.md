@@ -92,6 +92,8 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --check               do not apply changes to files
+  --exit-non-zero-on-format
+                        return non-zero if files are modified
   --no-validate         do not validate that the rendered HTML is consistent
   --version             show program's version number and exit
   --number              apply consecutive numbering to ordered lists

@@ -178,6 +178,8 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
                 return 1
             if path:
                 if formatted_str != original_str:
+                    if opts["exit_non_zero_on_format"]:
+                        format_errors_found = True
                     path.write_bytes(formatted_str.encode())
             else:
                 sys.stdout.buffer.write(formatted_str.encode())
@@ -209,6 +211,11 @@ def make_arg_parser(
     parser.add_argument("paths", nargs="*", help="files to format")
     parser.add_argument(
         "--check", action="store_true", help="do not apply changes to files"
+    )
+    parser.add_argument(
+        "--exit-non-zero-on-format",
+        action="store_true",
+        help="return non-zero if files are modified",
     )
     parser.add_argument(
         "--no-validate",
