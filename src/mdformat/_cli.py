@@ -206,7 +206,7 @@ def make_arg_parser(
         epilog=(epilog if epilog else None),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("paths", nargs="*", help="files to format")
+    parser.add_argument("paths", nargs="*", help="files to format, or '-' for stdin")
     parser.add_argument(
         "--check", action="store_true", help="do not apply changes to files"
     )
