@@ -559,10 +559,10 @@ This is a very long line that should be wrapped if
 config is read.
 """
 
-    with patch("os.getcwd", return_value=str(tmp_path)):
+    with patch("mdformat._cli.Path.cwd", return_value=tmp_path):
         patch_stdin(input_content)
 
-        assert run(("-",)) == 0
+        assert run(("-",), cache_toml=False) == 0
 
         captured = capfd.readouterr()
 
