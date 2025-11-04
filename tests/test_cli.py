@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from unittest.mock import patch
@@ -566,3 +567,33 @@ config is read.
         captured = capfd.readouterr()
 
         assert captured.out == expected_content
+
+
+def test_config_manual_path_conversion_coverage(tmp_path):
+    """Tests the edge case where config path is passed as a string, covering
+    the manual Path(config_path) conversion in run()."""
+
+    config_file = tmp_path / "custom.toml"
+    config_file.write_text("wrap = 40")
+
+    test_file = tmp_path / "test.md"
+    test_file.write_text("placeholder")
+
+    mock_args = {
+        "paths": [str(test_file)],
+        "config": str(config_file),
+        "check": False,
+        "validate": True,
+        "number": None,
+        "wrap": None,
+        "end_of_line": None,
+        "exclude": (),
+        "extensions": None,
+        "codeformatters": None,
+    }
+
+    with patch(
+        "mdformat._cli.argparse.ArgumentParser.parse_args",
+        return_value=argparse.Namespace(**mock_args),
+    ):
+        assert run(["placeholder"]) == 0
