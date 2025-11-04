@@ -65,8 +65,8 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
             print_error(str(e))
             return 1
         except FileNotFoundError as e:
-            if config_override_path and config_override_path.samefile(Path(e.filename)):
-                print_error(f"Configuration file not found at: {e.filename}")
+            if config_override_path and str(config_override_path) == str(e.args[0]):
+                print_error(f"Configuration file not found at: {e.args[0]}")
                 return 1
             raise
 
