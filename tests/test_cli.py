@@ -546,20 +546,18 @@ def test_config_search_from_stdin(tmp_path):
     None)."""
 
     config_path = tmp_path / ".mdformat.toml"
-    config_path.write_text("wrap = 100")
+    config_path.write_text("wrap = 50")
+
+    input_content = "This is a very long line that should be wrapped if config is read."
+
+    expected_content = """\
+This is a very long line that should be wrapped if
+config is read.
+"""
 
     with patch("os.getcwd", return_value=str(tmp_path)):
-
-        input_content = (
-            "This is a very long line that should be wrapped if config is read."
-        )
-
-        expected_content = (
-            "This is a very long line that should be wrapped if config is read.\n"
-        )
-
         with patch("sys.stdin", io.StringIO(input_content)):
             with patch("sys.stdout", io.StringIO()) as mock_stdout:
-                assert run([]) == 0
+                assert run(("-",)) == 0
 
                 assert mock_stdout.getvalue() == expected_content
