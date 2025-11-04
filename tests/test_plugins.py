@@ -1,5 +1,6 @@
 import argparse
 import importlib.metadata
+import inspect
 from textwrap import dedent
 from unittest.mock import patch
 
@@ -461,3 +462,44 @@ def test_no_extensions__toml(tmp_path, monkeypatch):
     config_path.write_text("extensions = []")
     assert run((str(tmp_path),), cache_toml=False) == 0
     assert file1_path.read_text() == unformatted
+
+
+class MockPluginWithDefault:
+    @staticmethod
+    def update_mdit(mdit):
+        pass
+
+    @staticmethod
+    def add_cli_argument_group(group: argparse._ArgumentGroup) -> None:
+
+        group.add_argument("--test-arg", default="a")
+
+    RENDERERS = {}
+
+
+def test_cli_argument_default_warning(monkeypatch, caplog):
+    """Checks that the internal code path for checking plugin argument defaults
+    is covered."""
+    from mdformat import plugins
+    from mdformat._cli import make_arg_parser
+
+    plugin_name = "test-warn-plugin"
+    monkeypatch.setitem(plugins.PARSER_EXTENSIONS, plugin_name, MockPluginWithDefault)
+
+    with monkeypatch.context() as m:
+        m.setattr(
+            plugins,
+            "get_source_file_and_line",
+            lambda obj: (inspect.getsourcefile(MockPluginWithDefault), 175),
+        )
+
+        parser = make_arg_parser(
+            plugins._PARSER_EXTENSION_DISTS,
+            plugins._CODEFORMATTER_DISTS,
+            plugins.PARSER_EXTENSIONS,
+        )
+
+        cli_args = ["--test-warn-plugin.test-arg", "new-value", "dummy.md"]
+        opts = parser.parse_args(cli_args)
+
+        assert getattr(opts, f"plugin.{plugin_name}.test_arg") == "new-value"
