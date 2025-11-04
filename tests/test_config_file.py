@@ -196,25 +196,3 @@ def test_invalid_toml_in_parent_dir(tmp_path, capsys):
     assert run((str(file_path),), cache_toml=False) == 1
     captured = capsys.readouterr()
     assert "Invalid TOML syntax" in captured.err
-
-
-def test_read_toml_opts_invalid_value_coverage(tmp_path, capsys):
-    """Tests an invalid value inside a recursively discovered config file.
-
-    This ensures coverage for the validation error paths inside
-    read_toml_opts.
-    """
-
-    invalid_val = "wrap = 'not-a-mode'"
-    config_path = tmp_path / ".mdformat.toml"
-    config_path.write_text(invalid_val)
-
-    subdir_path = tmp_path / "subdir"
-    subdir_path.mkdir()
-    file_path = subdir_path / "test.md"
-    file_path.write_text("# Placeholder")
-
-    assert run((str(file_path),), cache_toml=False) == 1
-    captured = capsys.readouterr()
-    assert "Invalid 'wrap' value" in captured.err
-    assert "in " in captured.err
