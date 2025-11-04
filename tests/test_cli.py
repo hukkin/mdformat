@@ -512,3 +512,29 @@ def test_no_extensions(tmp_path, monkeypatch):
     file_path.write_text(original_md)
     assert run((str(file_path), "--no-extensions")) == 0
     assert file_path.read_text() == original_md
+
+
+def test_config_override_precedence(tmp_path):
+    explicit_config_path = tmp_path / "explicit.toml"
+    explicit_config_path.write_text("wrap = 50\nend_of_line = 'crlf'")
+
+    auto_config_path = tmp_path / ".mdformat.toml"
+    auto_config_path.write_text("wrap = 100")
+
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        "A very long line to test wrapping and EOLs.\nA very very long line."
+    )
+
+    expected_content = (
+        "A very long line to test wrapping and EOLs.\r\nA very very long\r\nline.\r\n"
+    )
+
+    assert run([str(file_path), "--config", str(explicit_config_path)]) == 0
+    assert file_path.read_bytes() == expected_content.encode("utf-8")
+
+    non_existent_path = tmp_path / "non_existent.toml"
+    unformatted_content = "unformatted content"
+    file_path.write_text(unformatted_content)
+    assert run([str(file_path), "--config", str(non_existent_path)]) == 1
+    assert file_path.read_text() == unformatted_content

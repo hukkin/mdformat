@@ -31,6 +31,22 @@ class InvalidConfError(Exception):
     - invalid conf value
     """
 
+def read_single_config_file(config_path: Path) -> tuple[Mapping, Path | None]:
+    """Read configuration from a single specified TOML file."""
+    if not config_path.is_file():
+        raise FileNotFoundError(config_path)
+
+    with open(config_path, "rb") as f:
+        try:
+            toml_opts = tomllib.load(f)
+        except tomllib.TOMLDecodeError as e:
+            raise InvalidConfError(f"Invalid TOML syntax in {config_path}: {e}")
+
+    _validate_keys(toml_opts, config_path)
+    _validate_values(toml_opts, config_path)
+
+    return toml_opts, config_path
+
 
 @functools.lru_cache
 def read_toml_opts(conf_dir: Path) -> tuple[Mapping, Path | None]:
