@@ -12,7 +12,12 @@ import sys
 import textwrap
 
 import mdformat
-from mdformat._conf import DEFAULT_OPTS, InvalidConfError, read_toml_opts, read_single_config_file,
+from mdformat._conf import (
+    DEFAULT_OPTS,
+    InvalidConfError,
+    read_single_config_file,
+    read_toml_opts,
+)
 from mdformat._util import detect_newline_type, is_md_equal
 import mdformat.plugins
 
@@ -345,7 +350,8 @@ def separate_core_and_plugin_opts(opts: Mapping) -> tuple[dict, dict]:
 class InvalidPath(Exception):
     """Exception raised when a path does not exist."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
         self.path = path
 
 

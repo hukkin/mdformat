@@ -31,6 +31,7 @@ class InvalidConfError(Exception):
     - invalid conf value
     """
 
+
 def read_single_config_file(config_path: Path) -> tuple[Mapping, Path | None]:
     """Read configuration from a single specified TOML file."""
     if not config_path.is_file():
