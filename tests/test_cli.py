@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 from unittest.mock import patch
@@ -512,3 +513,87 @@ def test_no_extensions(tmp_path, monkeypatch):
     file_path.write_text(original_md)
     assert run((str(file_path), "--no-extensions")) == 0
     assert file_path.read_text() == original_md
+
+
+def test_config_override_precedence(tmp_path):
+    explicit_config_path = tmp_path / "explicit.toml"
+    explicit_config_path.write_text("wrap = 50\nend_of_line = 'crlf'")
+
+    auto_config_path = tmp_path / ".mdformat.toml"
+    auto_config_path.write_text("wrap = 100")
+
+    file_path = tmp_path / "test.md"
+    file_path.write_text(
+        "A very long line to test wrapping and EOLs.\nA very very long line."
+    )
+
+    expected_content = (
+        "A very long line to test wrapping and EOLs. A very"
+        + "\r\n"
+        + "very long line."
+        + "\r\n"
+    )
+
+    assert run([str(file_path), "--config", str(explicit_config_path)]) == 0
+    assert file_path.read_bytes() == expected_content.encode("utf-8")
+
+    non_existent_path = tmp_path / "non_existent.toml"
+    unformatted_content = "unformatted content"
+    file_path.write_text(unformatted_content)
+
+    assert run([str(file_path), "--config", str(non_existent_path)]) == 1
+    assert file_path.read_text() == unformatted_content
+
+
+def test_config_search_from_stdin(tmp_path, capfd, patch_stdin):
+    """Test that config is searched from CWD when reading from stdin (path is
+    None)."""
+
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text("wrap = 50")
+
+    input_content = "This is a very long line that should be wrapped if config is read."
+
+    expected_content = """\
+This is a very long line that should be wrapped if
+config is read.
+"""
+
+    with patch("mdformat._cli.Path.cwd", return_value=tmp_path):
+        patch_stdin(input_content)
+
+        assert run(("-",), cache_toml=False) == 0
+
+        captured = capfd.readouterr()
+
+        assert captured.out == expected_content
+
+
+def test_config_manual_path_conversion_coverage(tmp_path):
+    """Tests the edge case where config path is passed as a string, covering
+    the manual Path(config_path) conversion in run()."""
+
+    config_file = tmp_path / "custom.toml"
+    config_file.write_text("wrap = 40")
+
+    test_file = tmp_path / "test.md"
+    test_file.write_text("placeholder")
+
+    mock_args = {
+        "paths": [str(test_file)],
+        "config": str(config_file),
+        "check": False,
+        "validate": True,
+        "number": None,
+        "wrap": None,
+        "end_of_line": None,
+        "exclude": (),
+        "extensions": None,
+        "codeformatters": None,
+    }
+
+    with patch(
+        "mdformat._cli.argparse.ArgumentParser.parse_args",
+        return_value=argparse.Namespace(**mock_args),
+    ):
+        assert run(["placeholder"]) == 0

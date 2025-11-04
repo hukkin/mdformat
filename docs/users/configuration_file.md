@@ -8,6 +8,16 @@ When formatting standard input stream, resolution will be started from current w
 
 Command line interface arguments take precedence over the configuration file.
 
+### Explicit Configuration Path
+
+Alternatively, you can explicitly point to a configuration file using the **`--config`** command-line argument. When this argument is used, the default recursive search for `.mdformat.toml` is **disabled**, and only the configuration found at the specified path will be loaded. This provides direct control over the configuration file location, which is useful when integrating `mdformat` into tools like `pre-commit` hooks that require configs to be stored in custom locations.
+
+**Example:**
+
+```bash
+mdformat file.md --config .config/mdformat.toml
+```
+
 ## Example configuration
 
 ```toml
