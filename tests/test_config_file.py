@@ -181,3 +181,18 @@ def test_single_config_file_invalid_toml(tmp_path):
         read_single_config_file(invalid_toml_path)
 
     assert f"Invalid TOML syntax in {invalid_toml_path}" in str(excinfo.value)
+
+
+def test_invalid_toml_in_parent_dir(tmp_path, capsys):
+
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text("]invalid TOML[")
+
+    subdir_path = tmp_path / "subdir"
+    subdir_path.mkdir()
+    file_path = subdir_path / "test_markdown.md"
+    file_path.write_text("# Test Markdown")
+
+    assert run((str(file_path),), cache_toml=False) == 1
+    captured = capsys.readouterr()
+    assert "Invalid TOML syntax" in captured.err
