@@ -527,7 +527,8 @@ def test_config_override_precedence(tmp_path):
     )
 
     expected_content = (
-        "A very long line to test wrapping and EOLs.\r\nA very very long line.\r\n"
+        "A very long line to test wrapping and EOLs. A very\r\n"
+        "very long line.\r\n"
     )
 
     assert run([str(file_path), "--config", str(explicit_config_path)]) == 0
