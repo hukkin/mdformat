@@ -1,4 +1,3 @@
-import io
 import os
 import sys
 from unittest.mock import patch
@@ -527,9 +526,11 @@ def test_config_override_precedence(tmp_path):
         "A very long line to test wrapping and EOLs.\nA very very long line."
     )
 
-expected_content = (
-        "A very long line to test wrapping and EOLs. A very" + "\r\n"
-        + "very long line." + "\r\n"
+    expected_content = (
+        "A very long line to test wrapping and EOLs. A very"
+        + "\r\n"
+        + "very long line."
+        + "\r\n"
     )
 
     assert run([str(file_path), "--config", str(explicit_config_path)]) == 0
