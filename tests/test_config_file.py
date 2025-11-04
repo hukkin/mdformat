@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 
 from mdformat._cli import run
+from mdformat._conf import InvalidConfError, read_single_config_file
 from tests.utils import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN
 
 
