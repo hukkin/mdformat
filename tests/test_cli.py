@@ -527,8 +527,9 @@ def test_config_override_precedence(tmp_path):
         "A very long line to test wrapping and EOLs.\nA very very long line."
     )
 
-    expected_content = (
-        "A very long line to test wrapping and EOLs. A very\r\n" "very long line.\r\n"
+expected_content = (
+        "A very long line to test wrapping and EOLs. A very" + "\r\n"
+        + "very long line." + "\r\n"
     )
 
     assert run([str(file_path), "--config", str(explicit_config_path)]) == 0
@@ -537,11 +538,12 @@ def test_config_override_precedence(tmp_path):
     non_existent_path = tmp_path / "non_existent.toml"
     unformatted_content = "unformatted content"
     file_path.write_text(unformatted_content)
+
     assert run([str(file_path), "--config", str(non_existent_path)]) == 1
     assert file_path.read_text() == unformatted_content
 
 
-def test_config_search_from_stdin(tmp_path):
+def test_config_search_from_stdin(tmp_path, capfd, patch_stdin):
     """Test that config is searched from CWD when reading from stdin (path is
     None)."""
 
@@ -556,8 +558,10 @@ config is read.
 """
 
     with patch("os.getcwd", return_value=str(tmp_path)):
-        with patch("sys.stdin", io.StringIO(input_content)):
-            with patch("sys.stdout", io.StringIO()) as mock_stdout:
-                assert run(("-",)) == 0
+        patch_stdin(input_content)
 
-                assert mock_stdout.getvalue() == expected_content
+        assert run(("-",)) == 0
+
+        captured = capfd.readouterr()
+
+        assert captured.out == expected_content
