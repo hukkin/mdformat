@@ -168,3 +168,15 @@ def test_conf_no_validate(tmp_path):
 
         assert run((str(file_path),), cache_toml=False) == 0
         assert file_path.read_text() == "1? ordered\n"
+
+
+def test_single_config_file_invalid_toml(tmp_path):
+    """Test that reading an explicitly supplied config file with invalid TOML
+    raises InvalidConfError."""
+    invalid_toml_path = tmp_path / "invalid.toml"
+    invalid_toml_path.write_text("key = 'value\n[broken")
+
+    with pytest.raises(InvalidConfError) as excinfo:
+        read_single_config_file(invalid_toml_path)
+
+    assert f"Invalid TOML syntax in {invalid_toml_path}" in str(excinfo.value)

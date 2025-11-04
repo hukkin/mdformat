@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 from unittest.mock import patch
 
@@ -539,3 +540,27 @@ def test_config_override_precedence(tmp_path):
     file_path.write_text(unformatted_content)
     assert run([str(file_path), "--config", str(non_existent_path)]) == 1
     assert file_path.read_text() == unformatted_content
+
+
+def test_config_search_from_stdin(tmp_path):
+    """Test that config is searched from CWD when reading from stdin (path is
+    None)."""
+
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text("wrap = 100")
+
+    with patch("os.getcwd", return_value=str(tmp_path)):
+
+        input_content = (
+            "This is a very long line that should be wrapped if config is read."
+        )
+
+        expected_content = (
+            "This is a very long line that should be wrapped if config is read.\n"
+        )
+
+        with patch("sys.stdin", io.StringIO(input_content)):
+            with patch("sys.stdout", io.StringIO()) as mock_stdout:
+                assert run([]) == 0
+
+                assert mock_stdout.getvalue() == expected_content
