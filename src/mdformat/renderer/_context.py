@@ -63,6 +63,10 @@ def make_render_children(separator: str) -> Render:
 
 def hr(node: RenderTreeNode, context: RenderContext) -> str:
     thematic_break_width = 70
+    wrap_mode = context.options["mdformat"]["wrap"]
+    if isinstance(wrap_mode, int):
+        thematic_break_width = max(3, wrap_mode)
+
     return "_" * thematic_break_width
 
 
