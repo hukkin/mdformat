@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 import functools
+from collections.abc import Mapping
+from contextlib import suppress
 from pathlib import Path
 from types import MappingProxyType
 
@@ -35,7 +36,10 @@ class InvalidConfError(Exception):
 @functools.lru_cache
 def read_toml_opts(conf_dir: Path) -> tuple[Mapping, Path | None]:
     conf_path = conf_dir / ".mdformat.toml"
-    if not conf_path.is_file():
+    is_file = False
+    with suppress(OSError):
+        is_file = conf_path.is_file()
+    if not is_file:
         parent_dir = conf_dir.parent
         if conf_dir == parent_dir:
             return {}, None

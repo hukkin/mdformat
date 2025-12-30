@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -168,3 +169,24 @@ def test_conf_no_validate(tmp_path):
 
         assert run((str(file_path),), cache_toml=False) == 0
         assert file_path.read_text() == "1? ordered\n"
+
+
+def test_conf_search_with_oserror(tmp_path):
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text("wrap = 'no'")
+
+    subdir_path = tmp_path / "subdir"
+    subdir_path.mkdir()
+    file_path = subdir_path / "test_markdown.md"
+    file_path.write_text("remove\nthis\nwrap")
+
+    original_is_file = Path.is_file
+
+    def mock_is_file(self):
+        if str(self).endswith("subdir/.mdformat.toml"):
+            raise OSError(5, "Input/output error")
+        return original_is_file(self)
+
+    with mock.patch("pathlib.Path.is_file", new=mock_is_file):
+        assert run((str(file_path),), cache_toml=False) == 0
+        assert file_path.read_text() == "remove this wrap\n"
