@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import functools
 from collections.abc import Mapping
 from contextlib import suppress
+import functools
 from pathlib import Path
 from types import MappingProxyType
 
