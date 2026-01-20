@@ -14,6 +14,7 @@ import textwrap
 import mdformat
 from mdformat._conf import (
     DEFAULT_OPTS,
+    ConfigNotFoundError,
     InvalidConfError,
     read_single_config_file,
     read_toml_opts,
@@ -47,6 +48,18 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
         print_paragraphs(["No files have been passed in. Doing nothing."])
         return 0
 
+    # Load the override config once if specified
+    override_toml_opts: Mapping = {}
+    override_toml_path: Path | None = None
+    if config_override_path:
+        try:
+            override_toml_opts, override_toml_path = read_single_config_file(
+                config_override_path
+            )
+        except (ConfigNotFoundError, InvalidConfError) as e:
+            print_error(str(e))
+            return 1
+
     try:
         file_paths = resolve_file_paths(cli_opts["paths"])
     except InvalidPath as e:
@@ -57,18 +70,14 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
     for path in file_paths:
         try:
             if config_override_path:
-                toml_opts, toml_path = read_single_config_file(config_override_path)
+                toml_opts = override_toml_opts
+                toml_path = override_toml_path
             else:
                 read_toml = read_toml_opts if cache_toml else read_toml_opts.__wrapped__
                 toml_opts, toml_path = read_toml(path.parent if path else Path.cwd())
         except InvalidConfError as e:
             print_error(str(e))
             return 1
-        except FileNotFoundError as e:
-            if config_override_path and str(config_override_path) == str(e.args[0]):
-                print_error(f"Configuration file not found at: {e.args[0]}")
-                return 1
-            raise
 
         opts = {**DEFAULT_OPTS, **toml_opts, **cli_core_opts}
 
