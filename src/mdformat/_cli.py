@@ -12,7 +12,13 @@ import sys
 import textwrap
 
 import mdformat
-from mdformat._conf import DEFAULT_OPTS, InvalidConfError, read_toml_opts
+from mdformat._conf import (
+    DEFAULT_OPTS,
+    ConfigNotFoundError,
+    InvalidConfError,
+    read_single_config_file,
+    read_toml_opts,
+)
 from mdformat._util import detect_newline_type, is_md_equal
 import mdformat.plugins
 
@@ -34,9 +40,25 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
     }
     cli_core_opts, cli_plugin_opts = separate_core_and_plugin_opts(cli_opts)
 
+    config_override_path = cli_core_opts.pop("config", None)
+    if config_override_path and not isinstance(config_override_path, Path):
+        config_override_path = Path(config_override_path)
+
     if not cli_opts["paths"]:
         print_paragraphs(["No files have been passed in. Doing nothing."])
         return 0
+
+    # Load the override config once if specified
+    override_toml_opts: Mapping = {}
+    override_toml_path: Path | None = None
+    if config_override_path:
+        try:
+            override_toml_opts, override_toml_path = read_single_config_file(
+                config_override_path
+            )
+        except (ConfigNotFoundError, InvalidConfError) as e:
+            print_error(str(e))
+            return 1
 
     try:
         file_paths = resolve_file_paths(cli_opts["paths"])
@@ -46,9 +68,13 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
     format_errors_found = False
     renderer_warning_printer = RendererWarningPrinter()
     for path in file_paths:
-        read_toml = read_toml_opts if cache_toml else read_toml_opts.__wrapped__
         try:
-            toml_opts, toml_path = read_toml(path.parent if path else Path.cwd())
+            if config_override_path:
+                toml_opts = override_toml_opts
+                toml_path = override_toml_path
+            else:
+                read_toml = read_toml_opts if cache_toml else read_toml_opts.__wrapped__
+                toml_opts, toml_path = read_toml(path.parent if path else Path.cwd())
         except InvalidConfError as e:
             print_error(str(e))
             return 1
@@ -241,6 +267,13 @@ def make_arg_parser(
         choices=("lf", "crlf", "keep"),
         help="output file line ending mode (default: lf)",
     )
+
+    parser.add_argument(
+        "--config",
+        type=Path,
+        help="path to a TOML configuration file to use (overrides auto-detection)",
+    )
+
     if sys.version_info >= (3, 13):  # pragma: >=3.13 cover
         parser.add_argument(
             "--exclude",
@@ -326,7 +359,8 @@ def separate_core_and_plugin_opts(opts: Mapping) -> tuple[dict, dict]:
 class InvalidPath(Exception):
     """Exception raised when a path does not exist."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
         self.path = path
 
 

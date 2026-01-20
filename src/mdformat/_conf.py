@@ -32,6 +32,37 @@ class InvalidConfError(Exception):
     """
 
 
+class ConfigNotFoundError(FileNotFoundError):
+    """Error raised when a specified configuration file is not found."""
+
+    def __init__(self, path: Path) -> None:
+        super().__init__(f"Configuration file not found at: {path}")
+        self.path = path
+
+
+def _load_toml_file(conf_path: Path) -> Mapping:
+    """Read and validate a TOML configuration file."""
+    with open(conf_path, "rb") as f:
+        try:
+            toml_opts = tomllib.load(f)
+        except tomllib.TOMLDecodeError as e:
+            raise InvalidConfError(f"Invalid TOML syntax in {conf_path}: {e}")
+
+    _validate_keys(toml_opts, conf_path)
+    _validate_values(toml_opts, conf_path)
+    return toml_opts
+
+
+def read_single_config_file(config_path: Path) -> tuple[Mapping, Path | None]:
+    """Read configuration from a single specified TOML file."""
+    if not config_path.is_file():
+        raise ConfigNotFoundError(config_path)
+
+    toml_opts = _load_toml_file(config_path)
+
+    return toml_opts, config_path
+
+
 @functools.lru_cache
 def read_toml_opts(conf_dir: Path) -> tuple[Mapping, Path | None]:
     conf_path = conf_dir / ".mdformat.toml"
@@ -41,14 +72,7 @@ def read_toml_opts(conf_dir: Path) -> tuple[Mapping, Path | None]:
             return {}, None
         return read_toml_opts(parent_dir)
 
-    with open(conf_path, "rb") as f:
-        try:
-            toml_opts = tomllib.load(f)
-        except tomllib.TOMLDecodeError as e:
-            raise InvalidConfError(f"Invalid TOML syntax: {e}")
-
-    _validate_keys(toml_opts, conf_path)
-    _validate_values(toml_opts, conf_path)
+    toml_opts = _load_toml_file(conf_path)
 
     return toml_opts, conf_path
 

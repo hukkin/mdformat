@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 
 from mdformat._cli import run
+from mdformat._conf import InvalidConfError, read_single_config_file
 from tests.utils import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN
 
 
@@ -168,3 +169,30 @@ def test_conf_no_validate(tmp_path):
 
         assert run((str(file_path),), cache_toml=False) == 0
         assert file_path.read_text() == "1? ordered\n"
+
+
+def test_single_config_file_invalid_toml(tmp_path):
+    """Test that reading an explicitly supplied config file with invalid TOML
+    raises InvalidConfError."""
+    invalid_toml_path = tmp_path / "invalid.toml"
+    invalid_toml_path.write_text("key = 'value\n[broken")
+
+    with pytest.raises(InvalidConfError) as excinfo:
+        read_single_config_file(invalid_toml_path)
+
+    assert f"Invalid TOML syntax in {invalid_toml_path}" in str(excinfo.value)
+
+
+def test_invalid_toml_in_parent_dir(tmp_path, capsys):
+
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text("]invalid TOML[")
+
+    subdir_path = tmp_path / "subdir"
+    subdir_path.mkdir()
+    file_path = subdir_path / "test_markdown.md"
+    file_path.write_text("# Test Markdown")
+
+    assert run((str(file_path),), cache_toml=False) == 1
+    captured = capsys.readouterr()
+    assert "Invalid TOML syntax" in captured.err
