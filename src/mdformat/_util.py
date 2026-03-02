@@ -4,16 +4,19 @@ from collections.abc import Iterable, Mapping
 from contextlib import nullcontext
 import re
 from types import MappingProxyType
-from typing import Any, Literal
-
-from markdown_it import MarkdownIt
-from markdown_it.renderer import RendererHTML
+from typing import TYPE_CHECKING, Any, Literal
 
 import mdformat.plugins
 
+if TYPE_CHECKING:
+    from markdown_it import MarkdownIt
+
 NULL_CTX = nullcontext()
 EMPTY_MAP: MappingProxyType = MappingProxyType({})
+
 RE_NEWLINES = re.compile(r"\r\n|\r|\n")
+RE_HTML_START_SPACE_PREFIX = re.compile(r" (<[a-zA-Z][-a-zA-Z0-9]*>)")
+RE_HTML_END_SPACE_SUFFIX = re.compile(r"(</[a-zA-Z][-a-zA-Z0-9]*>) ")
 
 
 def build_mdit(
@@ -23,6 +26,9 @@ def build_mdit(
     extensions: Iterable[str] = (),
     codeformatters: Iterable[str] = (),
 ) -> MarkdownIt:
+    # Lazy import to improve module import time
+    from markdown_it import MarkdownIt
+
     mdit = MarkdownIt(renderer_cls=renderer_cls)
     mdit.options["mdformat"] = mdformat_opts
     # store reference labels in link/image tokens
@@ -42,6 +48,15 @@ def build_mdit(
     return mdit
 
 
+# Chars that markdown-it-py escapes when rendering code_inline:
+# https://github.com/executablebooks/markdown-it-py/blob/c5161b550f3c6c0a98d77e8389872405e8f9f9ee/markdown_it/common/utils.py#L138
+# Note that "&" is not included as it is used in the escape sequences of
+# these characters.
+_invalid_html_code_chars = '<>"'
+# a regex str that matches all except above chars
+_valid_html_code_char_re = rf"[^{re.escape(_invalid_html_code_chars)}]"
+
+
 def is_md_equal(
     md1: str,
     md2: str,
@@ -57,25 +72,23 @@ def is_md_equal(
     not a perfect solution, as there can be meaningful whitespace in
     HTML, e.g. in a <code> block.
     """
+    # Lazy import to improve module import time
+    from markdown_it.renderer import RendererHTML
+
     html_texts = {}
     mdit = build_mdit(RendererHTML, mdformat_opts=options, extensions=extensions)
     for key, text in [("md1", md1), ("md2", md2)]:
         html = mdit.render(text)
 
-        # The HTML can start with whitespace if Markdown starts with raw HTML
-        # preceded by whitespace. This whitespace should be safe to lstrip.
-        # Also, the trailing newline we add at the end of a document that ends
-        # in a raw html block not followed by a newline, seems to propagate to
-        # an HTML rendering. This newline should be safe to rstrip.
-        html = html.strip()
-
         # Remove codeblocks because code formatter plugins do arbitrary changes.
-        for codeclass in codeformatters:
+        if codeformatters:
+            langs_re = "|".join(re.escape(lang) for lang in codeformatters)
             html = re.sub(
-                f'<code class="language-{codeclass}">.*</code>',
+                rf'<code class="language-(?:{langs_re})">'
+                rf"{_valid_html_code_char_re}*"
+                r"</code>",
                 "",
                 html,
-                flags=re.DOTALL,
             )
 
         # Reduce all whitespace to a single space
@@ -85,17 +98,19 @@ def is_md_equal(
         html = html.replace("<p> ", "<p>")
         html = html.replace(" </p>", "</p>")
 
-        # Also strip whitespace leading/trailing the <p> elements so that we can
-        # safely remove empty paragraphs below without introducing extra whitespace.
-        html = html.replace(" <p>", "<p>")
-        html = html.replace("</p> ", "</p>")
+        # Also remove whitespace preceding opening tags, and trailing
+        # closing tags, so that we can safely remove empty paragraphs
+        # below without introducing extra whitespace.
+        html = RE_HTML_END_SPACE_SUFFIX.sub(r"\g<1>", html)
+        html = RE_HTML_START_SPACE_PREFIX.sub(r"\g<1>", html)
 
         # empty p elements should be ignored by user agents
         # (https://www.w3.org/TR/REC-html40/struct/text.html#edef-P)
         html = html.replace("<p></p>", "")
 
-        # If it's nothing but whitespace, it's equal
-        html = re.sub(r"^\s+$", "", html)
+        # Leading and trailing whitespace should be safe to ignore. This
+        # also makes any documents that are whitespace-only equal.
+        html = html.strip()
 
         html_texts[key] = html
 

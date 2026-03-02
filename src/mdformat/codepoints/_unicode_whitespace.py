@@ -7,7 +7,6 @@ UNICODE_WHITESPACE = frozenset(
     (
         "\t",
         "\n",
-        "\x0b",
         "\x0c",
         "\r",
         " ",
@@ -31,12 +30,11 @@ UNICODE_WHITESPACE = frozenset(
 )
 
 if __name__ == "__main__":
-    import string
     import sys
     import unicodedata
 
     UNICODE_CHARS = frozenset(chr(c) for c in range(sys.maxunicode + 1))
     UNICODE_WHITESPACE = frozenset(
         c for c in UNICODE_CHARS if unicodedata.category(c) == "Zs"
-    ) | frozenset(string.whitespace)
+    ) | frozenset("\t\n\f\r")
     print(f"frozenset({tuple(sorted(UNICODE_WHITESPACE))})")

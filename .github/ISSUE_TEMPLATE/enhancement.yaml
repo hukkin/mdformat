@@ -1,0 +1,25 @@
+name: Request an enhancement 💡
+description: Suggest an idea for this project
+labels: [enhancement]
+body:
+- type: textarea
+  id: context
+  attributes:
+    label: Context
+    description: |
+      - Provide background to help others understand this issue.
+      - Describe the problem or need you'd like to address.
+  validations:
+    required: true
+
+
+- type: textarea
+  id: proposal
+  attributes:
+    label: Proposal
+    description: |
+      - A simple and clear description of what you're proposing.
+      - Ideas or constraints for how to implement this proposal
+      - Important considerations to think about or discuss
+  validations:
+    required: false

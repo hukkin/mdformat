@@ -9,9 +9,7 @@ Note that mdformat is an opinionated tool
 that attempts to keep formatting style changing configuration to its minimum.
 New configuration will only be added for a very good reason and use case.
 
-Below are the basic development steps,
-and for further information also see the
-[EBP organisation guidelines](https://github.com/executablebooks/.github/blob/master/CONTRIBUTING.md).
+Below are the basic development steps.
 
 1. Fork and clone the repository.
 
@@ -73,6 +71,18 @@ which formats Python code blocks with Black.
 
 ## Developing parser extension plugins
 
+The building blocks of an mdformat parses extension are typically:
+
+- Extend mdformat's CommonMark parser to parse the syntax extension.
+  Mdformat uses [markdown-it-py](https://github.com/executablebooks/markdown-it-py) to parse.
+  Note that markdown-it-py offers a range of extensions to the base CommonMark parser (see the [documented list](https://markdown-it-py.readthedocs.io/en/latest/plugins.html)),
+  so there's a chance the extension already exists.
+- Activate the parser extension in mdformat.
+- Add rendering support for the new syntax.
+- Backslash escape the new syntax where applicable (typically either `text`, `inline` or `paragraph` renderers),
+  to ensure mdformat doesn't render it when it must not.
+  This could happen, for instance, when the syntax was backslash escaped in source Markdown.
+
 The easiest way to get started on a plugin, is to use the <https://github.com/executablebooks/mdformat-plugin> template repository.
 
 Mdformat parser extension plugins need to adhere to the `mdformat.plugins.ParserExtensionInterface`:
@@ -125,4 +135,4 @@ If using Poetry or Flit for packaging, the entry point configuration in `pyproje
 
 ## Making your plugin discoverable
 
-In case you host your plugin on GitHub, make sure to add it under the "mdformat" topic so it shows up on https://github.com/topics/mdformat.
+In case you host your plugin on GitHub, make sure to add it under the "mdformat" topic so it shows up on <https://github.com/topics/mdformat>.

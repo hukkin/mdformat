@@ -1,11 +1,11 @@
 <div align="center">
 
 [![Documentation Status](https://readthedocs.org/projects/mdformat/badge/?version=latest)](https://mdformat.readthedocs.io/en/latest/?badge=latest)
-[![Build Status](https://github.com/executablebooks/mdformat/workflows/Tests/badge.svg?branch=master)](https://github.com/executablebooks/mdformat/actions?query=workflow%3ATests+branch%3Amaster+event%3Apush)
-[![codecov.io](https://codecov.io/gh/executablebooks/mdformat/branch/master/graph/badge.svg)](https://codecov.io/gh/executablebooks/mdformat)
+[![Build Status](https://github.com/hukkin/mdformat/actions/workflows/tests.yaml/badge.svg?branch=master)](https://github.com/hukkin/mdformat/actions?query=workflow%3ATests+branch%3Amaster+event%3Apush)
+[![codecov.io](https://codecov.io/gh/hukkin/mdformat/branch/master/graph/badge.svg)](https://codecov.io/gh/hukkin/mdformat)
 [![PyPI version](https://img.shields.io/pypi/v/mdformat)](https://pypi.org/project/mdformat)
 
-# ![mdformat](https://raw.githubusercontent.com/executablebooks/mdformat/master/docs/_static/logo.svg)
+# ![mdformat](https://raw.githubusercontent.com/hukkin/mdformat/master/docs/_static/logo.svg)
 
 > CommonMark compliant Markdown formatter
 
@@ -28,26 +28,14 @@ Find out more in the [docs](https://mdformat.readthedocs.io).
 Install with [CommonMark](https://spec.commonmark.org/current/) support:
 
 ```bash
-pip install mdformat
+pipx install mdformat
 ```
 
 Install with [GitHub Flavored Markdown (GFM)](https://github.github.com/gfm/) support:
 
 ```bash
-pip install mdformat-gfm
-```
-
-Note that GitHub's Markdown renderer supports syntax extensions not included in the GFM specification.
-For full GitHub support do:
-
-```bash
-pip install mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-gfm-alerts
-```
-
-Install with [Markedly Structured Text (MyST)](https://myst-parser.readthedocs.io/en/latest/using/syntax.html) support:
-
-```bash
-pip install mdformat-myst
+pipx install mdformat
+pipx inject mdformat mdformat-gfm
 ```
 
 <!-- end installing -->
@@ -90,8 +78,10 @@ If a file is not properly formatted, the exit code will be non-zero.
 
 ```console
 foo@bar:~$ mdformat --help
-usage: mdformat [-h] [--check] [--version] [--number] [--wrap {keep,no,INTEGER}]
-                [--end-of-line {lf,crlf,keep}] [--exclude PATTERN]
+usage: mdformat [-h] [--check] [--no-validate] [--version] [--number]
+                [--wrap {keep,no,INTEGER}] [--end-of-line {lf,crlf,keep}]
+                [--exclude PATTERN] [--extensions EXTENSION]
+                [--codeformatters LANGUAGE]
                 [paths ...]
 
 CommonMark compliant Markdown formatter
@@ -102,13 +92,23 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --check               do not apply changes to files
+  --no-validate         do not validate that the rendered HTML is consistent
   --version             show program's version number and exit
   --number              apply consecutive numbering to ordered lists
   --wrap {keep,no,INTEGER}
                         paragraph word wrap mode (default: keep)
   --end-of-line {lf,crlf,keep}
                         output file line ending mode (default: lf)
-  --exclude PATTERN     exclude files that match the Unix-style glob pattern (multiple allowed)
+  --exclude PATTERN     exclude files that match the Unix-style glob pattern
+                        (multiple allowed)
+  --extensions EXTENSION
+                        require and enable an extension plugin (multiple
+                        allowed) (use `--no-extensions` to disable) (default:
+                        all enabled)
+  --codeformatters LANGUAGE
+                        require and enable a code formatter plugin (multiple
+                        allowed) (use `--no-codeformatters` to disable)
+                        (default: all enabled)
 ```
 
 The `--exclude` option is only available on Python 3.13+.
@@ -134,6 +134,28 @@ Here's a few pointers to get you started:
 
 ## Frequently Asked Questions
 
+### Why does mdformat backslash escape special syntax specific to MkDocs / Hugo / Obsidian / GitHub / some other Markdown engine?
+
+Mdformat is a CommonMark formatter.
+It doesn't have out-of-the-box support for syntax other than what is defined in [the CommonMark specification](https://spec.commonmark.org/current/).
+
+The custom syntax that these Markdown engines introduce typically redefines the meaning of
+angle brackets, square brackets, parentheses, hash character — characters that are special in CommonMark.
+Mdformat often resorts to backslash escaping these characters to ensure its formatting changes never alter a rendered document.
+
+Additionally some engines, namely MkDocs,
+[do not support](https://github.com/mkdocs/mkdocs/issues/1835) CommonMark to begin with,
+so incompatibilities are unavoidable.
+
+Luckily mdformat is extensible by plugins.
+For many Markdown engines you'll find support by searching
+[the plugin docs](https://mdformat.readthedocs.io/en/stable/users/plugins.html)
+or [mdformat GitHub topic](https://github.com/topics/mdformat).
+
+You may also want to consider a documentation generator that adheres to CommonMark as its base syntax
+e.g. [mdBook](https://rust-lang.github.io/mdBook/)
+or [Sphinx with Markdown](https://www.sphinx-doc.org/en/master/usage/markdown.html).
+
 ### Why not use [Prettier](https://github.com/prettier/prettier) instead?
 
 Mdformat is pure Python code!
@@ -154,10 +176,10 @@ according to the author themselves,
 is [inferior to markdown-it](https://github.com/remarkjs/remark/issues/75#issuecomment-143532326) used by mdformat.
 `remark-parse` v9.x is advertised as CommonMark compliant
 and presumably would fix many of the issues,
-but is not used by Prettier (v2.4.0) yet.
+but is not used by Prettier (v3.3.3) yet.
 
-Prettier (v2.4.0), being able to format many languages other than Markdown,
-is a large package with 65 direct dependencies
+Prettier (v3.3.3), being able to format many languages other than Markdown,
+is a large package with 73 direct dependencies
 (mdformat only has one in Python 3.11+).
 This can be a disadvantage in many environments,
 one example being size optimized Docker images.

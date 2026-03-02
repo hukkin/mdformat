@@ -1,0 +1,71 @@
+name: Report a bug 🐛
+description: Mdformat crashes or exit code is non-zero, output is invalid CommonMark, rendered document is visually different after formatting...
+labels: [bug]
+body:
+- type: textarea
+  id: describe
+  attributes:
+    label: Describe the bug
+    description: |
+      Provide a short description (one or two sentences) about the problem. What did you expect to happen, and what is actually happening?
+    value: |
+      **context**
+      When I do ___.
+      
+      **expectation**
+      I expected ___ to occur.
+      
+      **bug**
+      But instead ___ happens
+      Here's an error message I ran into...
+
+      ```console
+      $ mdformat README.md
+      ERROR ...
+      ```
+
+  validations:
+    required: true
+
+- type: textarea
+  id: reproduce
+  attributes:
+    label: Reproduce the bug
+    description: |
+      Provide information that others may use to re-produce this behavior.
+      For example:
+      
+      - A self-contained command to reproduce the error, e.g.
+        ```console
+        printf -- '- item A\n  - item A.a\n- item B' | pipx run mdformat -
+        ```
+      - Minimal content of a file that when formatted causes the error. Command to format the file.
+
+    placeholder: |
+      1. Create a file test.md with the content '...'
+      2. Run `mdformat test.md`
+      3. See error
+  validations:
+    required: true
+
+- type: textarea
+  id: environment
+  attributes:
+    label: List your environment
+    description: |
+      List the environment needed to reproduce the error.
+      Here are a few ideas:
+
+      - The output of:      
+        ```console
+        mdformat --version
+        ```
+      - The version of Python you're using.
+      - Your operating system
+    placeholder: |
+      ```
+      ❯ mdformat --version
+        mdformat 0.7.18 (mdformat_black: 0.1.1)
+      ```
+  validations:
+    required: true

@@ -1,4 +1,3 @@
-from io import StringIO
 import os
 import sys
 from unittest.mock import patch
@@ -6,11 +5,14 @@ from unittest.mock import patch
 import pytest
 
 import mdformat
-from mdformat._cli import get_package_name, run, wrap_paragraphs
-from mdformat.plugins import CODEFORMATTERS
-
-UNFORMATTED_MARKDOWN = "\n\n# A header\n\n"
-FORMATTED_MARKDOWN = "# A header\n"
+from mdformat._cli import get_plugin_info_str, run, wrap_paragraphs
+from mdformat.plugins import CODEFORMATTERS, PARSER_EXTENSIONS
+from tests.utils import (
+    FORMATTED_MARKDOWN,
+    UNFORMATTED_MARKDOWN,
+    ASTChangingPlugin,
+    PrefixPostprocessPlugin,
+)
 
 
 def test_no_files_passed():
@@ -127,6 +129,18 @@ def test_check_fail_diff(capsys, tmp_path):
     assert "-\n-\n # A header\n-\n" in captured.out
 
 
+def test_diff_without_check(capsys, tmp_path):
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text(UNFORMATTED_MARKDOWN)
+
+    assert run((str(file_path), "--diff")) == 0
+
+    captured = capsys.readouterr()
+    assert str(file_path) in captured.out
+    assert "-\n-\n # A header\n-\n" in captured.out
+    assert file_path.read_text() == UNFORMATTED_MARKDOWN
+
+
 def test_check__multi_fail(capsys, tmp_path):
     """Test for --check flag when multiple files are unformatted.
 
@@ -155,8 +169,8 @@ def test_formatter_plugin(tmp_path, monkeypatch):
     assert file_path.read_text() == "```lang\ndummy\n```\n"
 
 
-def test_dash_stdin(capfd, monkeypatch):
-    monkeypatch.setattr(sys, "stdin", StringIO(UNFORMATTED_MARKDOWN))
+def test_dash_stdin(capfd, patch_stdin):
+    patch_stdin(UNFORMATTED_MARKDOWN)
     assert run(("-",)) == 0
     captured = capfd.readouterr()
     assert captured.out == FORMATTED_MARKDOWN
@@ -170,7 +184,7 @@ def test_wrap_paragraphs():
                 "The formatted Markdown renders to different HTML than the input Markdown. "  # noqa: E501
                 "This is likely a bug in mdformat. "
                 "Please create an issue report here: "
-                "https://github.com/executablebooks/mdformat/issues",
+                "https://github.com/hukkin/mdformat/issues",
             ]
         ) == (
             "Error: Could not format\n"
@@ -178,7 +192,7 @@ def test_wrap_paragraphs():
             "\n"
             "The formatted Markdown renders to different HTML than the input\n"
             "Markdown. This is likely a bug in mdformat. Please create an issue\n"
-            "report here: https://github.com/executablebooks/mdformat/issues\n"
+            "report here: https://github.com/hukkin/mdformat/issues\n"
         )
 
 
@@ -256,7 +270,6 @@ def test_consecutive_wrap_width_lines(tmp_path):
     assert file_path.read_text() == text
 
 
-@pytest.mark.xfail(reason="https://github.com/executablebooks/mdformat/issues/326")
 def test_wrap__hard_break(tmp_path):
     file_path = tmp_path / "test_markdown.md"
     file_path.write_text(
@@ -311,8 +324,8 @@ def test_eol__keep_crlf(tmp_path):
     assert file_path.read_bytes() == b"Oi\r\n"
 
 
-def test_eol__crlf_stdin(capfd, monkeypatch):
-    monkeypatch.setattr(sys, "stdin", StringIO("Oi\n"))
+def test_eol__crlf_stdin(capfd, patch_stdin):
+    patch_stdin("Oi\n")
     assert run(["-", "--end-of-line=crlf"]) == 0
     captured = capfd.readouterr()
     assert captured.out == "Oi\r\n"
@@ -358,11 +371,33 @@ def test_eol__check_keep_crlf(tmp_path):
     assert run((str(file_path), "--check", "--end-of-line=keep")) == 1
 
 
-def test_get_package_name():
-    # Test a function/class
-    assert get_package_name(patch) == "unittest"
-    # Test a package/module
-    assert get_package_name(mdformat) == "mdformat"
+def test_cli_no_validate(tmp_path):
+    file_path = tmp_path / "test.md"
+    content = "1. ordered"
+    file_path.write_text(content)
+
+    with patch("mdformat.renderer._context.get_list_marker_type", return_value="?"):
+        assert run((str(file_path),)) == 1
+        assert file_path.read_text() == content
+
+        assert run((str(file_path), "--no-validate")) == 0
+        assert file_path.read_text() == "1? ordered\n"
+
+
+def test_get_plugin_info_str():
+    info = get_plugin_info_str(
+        {"mdformat-tables": ("0.1.0", ["tables"])},
+        {"mdformat-black": ("12.1.0", ["python"])},
+    )
+    assert (
+        info
+        == """\
+installed codeformatters:
+  mdformat-black: python
+
+installed extensions:
+  mdformat-tables: tables"""
+    )
 
 
 def test_no_timestamp_modify(tmp_path):
@@ -412,3 +447,95 @@ def test_exclude(tmp_path):
             file_path_1.write_text(UNFORMATTED_MARKDOWN)
             assert run([str(file_path_1), "--exclude", bad_pattern]) == 0
             assert file_path_1.read_text() == FORMATTED_MARKDOWN
+
+
+def test_codeformatters(tmp_path, monkeypatch):
+    monkeypatch.setitem(CODEFORMATTERS, "enabled-lang", lambda code, info: "dumdum")
+    monkeypatch.setitem(CODEFORMATTERS, "disabled-lang", lambda code, info: "dumdum")
+    file_path = tmp_path / "test.md"
+    unformatted = """\
+```disabled-lang
+hey
+```
+
+```enabled-lang
+hey
+```
+"""
+    formatted = """\
+```disabled-lang
+hey
+```
+
+```enabled-lang
+dumdum
+```
+"""
+    file_path.write_text(unformatted)
+    assert run((str(file_path), "--codeformatters", "enabled-lang")) == 0
+    assert file_path.read_text() == formatted
+
+
+def test_extensions(tmp_path, monkeypatch):
+    ast_plugin_name = "ast-plug"
+    prefix_plugin_name = "prefix-plug"
+    monkeypatch.setitem(PARSER_EXTENSIONS, ast_plugin_name, ASTChangingPlugin)
+    monkeypatch.setitem(PARSER_EXTENSIONS, prefix_plugin_name, PrefixPostprocessPlugin)
+    unformatted = "original text\n"
+    file_path = tmp_path / "test.md"
+
+    file_path.write_text(unformatted)
+    assert run((str(file_path), "--extensions", "prefix-plug")) == 0
+    assert file_path.read_text() == "Prefixed!original text\n"
+
+    file_path.write_text(unformatted)
+    assert run((str(file_path), "--extensions", "ast-plug")) == 0
+    assert file_path.read_text() == ASTChangingPlugin.TEXT_REPLACEMENT + "\n"
+
+    file_path.write_text(unformatted)
+    assert (
+        run((str(file_path), "--extensions", "ast-plug", "--extensions", "prefix-plug"))
+        == 0
+    )
+    assert (
+        file_path.read_text() == "Prefixed!" + ASTChangingPlugin.TEXT_REPLACEMENT + "\n"
+    )
+
+
+def test_codeformatters__invalid(tmp_path, capsys):
+    file_path = tmp_path / "test.md"
+    file_path.write_text("")
+    assert run((str(file_path), "--codeformatters", "no-exists")) == 1
+    captured = capsys.readouterr()
+    assert "Error: Invalid code formatter required" in captured.err
+
+
+def test_extensions__invalid(tmp_path, capsys):
+    file_path = tmp_path / "test.md"
+    file_path.write_text("")
+    assert run((str(file_path), "--extensions", "no-exists")) == 1
+    captured = capsys.readouterr()
+    assert "Error: Invalid extension required" in captured.err
+
+
+def test_no_codeformatters(tmp_path, monkeypatch):
+    monkeypatch.setitem(CODEFORMATTERS, "lang", lambda code, info: "dumdum")
+    file_path = tmp_path / "test.md"
+    original_md = """\
+```lang
+original code
+```
+"""
+    file_path.write_text(original_md)
+    assert run((str(file_path), "--no-codeformatters")) == 0
+    assert file_path.read_text() == original_md
+
+
+def test_no_extensions(tmp_path, monkeypatch):
+    plugin_name = "plug-name"
+    monkeypatch.setitem(PARSER_EXTENSIONS, plugin_name, ASTChangingPlugin)
+    file_path = tmp_path / "test.md"
+    original_md = "original md\n"
+    file_path.write_text(original_md)
+    assert run((str(file_path), "--no-extensions")) == 0
+    assert file_path.read_text() == original_md

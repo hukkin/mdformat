@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 import functools
 from pathlib import Path
-from typing import Mapping
+from types import MappingProxyType
 
 from mdformat._compat import tomllib
+from mdformat._util import EMPTY_MAP
 
-DEFAULT_OPTS = {
-    "wrap": "keep",
-    "number": False,
-    "end_of_line": "lf",
-    "exclude": [],
-}
+DEFAULT_OPTS = MappingProxyType(
+    {
+        "wrap": "keep",
+        "number": False,
+        "end_of_line": "lf",
+        "validate": True,
+        "exclude": (),
+        "plugin": EMPTY_MAP,
+        "extensions": None,
+        "codeformatters": None,
+    }
+)
 
 
 class InvalidConfError(Exception):
@@ -24,7 +32,7 @@ class InvalidConfError(Exception):
     """
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def read_toml_opts(conf_dir: Path) -> tuple[Mapping, Path | None]:
     conf_path = conf_dir / ".mdformat.toml"
     if not conf_path.is_file():
@@ -56,6 +64,9 @@ def _validate_values(opts: Mapping, conf_path: Path) -> None:  # noqa: C901
     if "end_of_line" in opts:
         if opts["end_of_line"] not in {"crlf", "lf", "keep"}:
             raise InvalidConfError(f"Invalid 'end_of_line' value in {conf_path}")
+    if "validate" in opts:
+        if not isinstance(opts["validate"], bool):
+            raise InvalidConfError(f"Invalid 'validate' value in {conf_path}")
     if "number" in opts:
         if not isinstance(opts["number"], bool):
             raise InvalidConfError(f"Invalid 'number' value in {conf_path}")
@@ -65,6 +76,24 @@ def _validate_values(opts: Mapping, conf_path: Path) -> None:  # noqa: C901
         for pattern in opts["exclude"]:
             if not isinstance(pattern, str):
                 raise InvalidConfError(f"Invalid 'exclude' value in {conf_path}")
+    if "plugin" in opts:
+        if not isinstance(opts["plugin"], dict):
+            raise InvalidConfError(f"Invalid 'plugin' value in {conf_path}")
+        for plugin_conf in opts["plugin"].values():
+            if not isinstance(plugin_conf, dict):
+                raise InvalidConfError(f"Invalid 'plugin' value in {conf_path}")
+    if "extensions" in opts:
+        if not isinstance(opts["extensions"], list):
+            raise InvalidConfError(f"Invalid 'extensions' value in {conf_path}")
+        for extension in opts["extensions"]:
+            if not isinstance(extension, str):
+                raise InvalidConfError(f"Invalid 'extensions' value in {conf_path}")
+    if "codeformatters" in opts:
+        if not isinstance(opts["codeformatters"], list):
+            raise InvalidConfError(f"Invalid 'codeformatters' value in {conf_path}")
+        for lang in opts["codeformatters"]:
+            if not isinstance(lang, str):
+                raise InvalidConfError(f"Invalid 'codeformatters' value in {conf_path}")
 
 
 def _validate_keys(opts: Mapping, conf_path: Path) -> None:

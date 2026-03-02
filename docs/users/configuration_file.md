@@ -17,12 +17,21 @@ Command line interface arguments take precedence over the configuration file.
 # no configuration file at all. Change the values for non-default
 # behavior.
 #
-wrap = "keep"       # possible values: {"keep", "no", INTEGER}
-number = false      # possible values: {false, true}
-end_of_line = "lf"  # possible values: {"lf", "crlf", "keep"}
+wrap = "keep"         # options: {"keep", "no", INTEGER}
+number = false        # options: {false, true}
+end_of_line = "lf"    # options: {"lf", "crlf", "keep"}
+validate = true       # options: {false, true}
+# extensions = [      # options: a list of enabled extensions (default: all installed are enabled)
+#     "gfm",
+#     "toc",
+# ]
+# codeformatters = [  # options: a list of enabled code formatter languages (default: all installed are enabled)
+#     "python",
+#     "json",
+# ]
 
 # Python 3.13+ only:
-exclude = []        # possible values: a list of file path pattern strings
+exclude = []          # options: a list of file path pattern strings
 ```
 
 ## Exclude patterns
@@ -36,6 +45,8 @@ Glob patterns are matched against relative paths.
 If `--exclude` is used on the command line, the paths are relative to current working directory.
 Else the paths are relative to the parent directory of the file's `.mdformat.toml`.
 
+Only files (recursively) contained by the base directory can be excluded.
+
 Files that match an exclusion pattern are _always_ excluded,
 even in the case that they are directly referenced in a command line invocation.
 
@@ -44,10 +55,19 @@ even in the case that they are directly referenced in a command line invocation.
 ```toml
 # .mdformat.toml
 exclude = [
-    "CHANGELOG.md",              # exclude a single root level file
-    "venv/**",                   # recursively exclude a root level directory
-    "**/node_modules/**",        # recursively exclude a directory at any level
-    "**/*.txt",                  # exclude all .txt files
-    "**/*.m[!d]", "**/*.[!m]d",  # exclude all files that are not suffixed .md
+    # exclude a single root level file
+    "CHANGELOG.md",
+
+    # recursively exclude a root level directory
+    "venv/**",
+
+    # recursively exclude a directory at any level
+    "**/node_modules/**",
+
+    # exclude all .txt files
+    "**/*.txt",
+
+    # exclude all files that are not suffixed .md
+    "**/?", "**/??", "**/???", "**/*[!.]??", "**/*[!m]?", "**/*[!d]",
 ]
 ```

@@ -1,12 +1,10 @@
-from io import StringIO
 import sys
 from unittest import mock
 
 import pytest
 
 from mdformat._cli import run
-from mdformat._conf import read_toml_opts
-from tests.test_cli import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN
+from tests.utils import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN
 
 
 def test_cli_override(tmp_path):
@@ -65,9 +63,16 @@ def test_invalid_toml(tmp_path, capsys):
     [
         ("wrap", "wrap = -3"),
         ("end_of_line", "end_of_line = 'lol'"),
+        ("validate", "validate = 'off'"),
         ("number", "number = 0"),
         ("exclude", "exclude = '**'"),
         ("exclude", "exclude = ['1',3]"),
+        ("plugin", "plugin = []"),
+        ("plugin", "plugin.gfm = {}\nplugin.myst = 1"),
+        ("codeformatters", "codeformatters = 'python'"),
+        ("extensions", "extensions = 'gfm'"),
+        ("codeformatters", "codeformatters = ['python', 1]"),
+        ("extensions", "extensions = ['gfm', 1]"),
     ],
 )
 def test_invalid_conf_value(bad_conf, conf_key, tmp_path, capsys):
@@ -84,16 +89,14 @@ def test_invalid_conf_value(bad_conf, conf_key, tmp_path, capsys):
     assert f"Invalid '{conf_key}' value" in captured.err
 
 
-def test_conf_with_stdin(tmp_path, capfd, monkeypatch):
-    read_toml_opts.cache_clear()
-
+def test_conf_with_stdin(tmp_path, capfd, patch_stdin):
     config_path = tmp_path / ".mdformat.toml"
     config_path.write_text("number = true")
 
-    monkeypatch.setattr(sys, "stdin", StringIO("1. one\n1. two\n1. three"))
+    patch_stdin("1. one\n1. two\n1. three")
 
     with mock.patch("mdformat._cli.Path.cwd", return_value=tmp_path):
-        assert run(("-",)) == 0
+        assert run(("-",), cache_toml=False) == 0
     captured = capfd.readouterr()
     assert captured.out == "1. one\n2. two\n3. three\n"
 
@@ -146,3 +149,22 @@ def test_empty_exclude(tmp_path, capsys):
 
     assert run((str(tmp_path),)) == 0
     assert file1_path.read_text() == FORMATTED_MARKDOWN
+
+
+def test_conf_no_validate(tmp_path):
+    file_path = tmp_path / "file.md"
+    content = "1. ordered"
+    file_path.write_text(content)
+
+    with mock.patch(
+        "mdformat.renderer._context.get_list_marker_type",
+        return_value="?",
+    ):
+        assert run((str(file_path),), cache_toml=False) == 1
+        assert file_path.read_text() == content
+
+        config_path = tmp_path / ".mdformat.toml"
+        config_path.write_text("validate = false")
+
+        assert run((str(file_path),), cache_toml=False) == 0
+        assert file_path.read_text() == "1? ordered\n"

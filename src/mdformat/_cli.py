@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 import contextlib
-from datetime import datetime
-import itertools
+import functools
 import logging
 import os.path
 from pathlib import Path
@@ -13,12 +12,10 @@ import sys
 import textwrap
 
 import mdformat
-from mdformat._compat import importlib_metadata
 from mdformat._conf import DEFAULT_OPTS, InvalidConfError, read_toml_opts
 from mdformat._output import diff
 from mdformat._util import detect_newline_type, is_md_equal
 import mdformat.plugins
-import mdformat.renderer
 
 
 class RendererWarningPrinter(logging.Handler):
@@ -27,21 +24,17 @@ class RendererWarningPrinter(logging.Handler):
             sys.stderr.write(f"Warning: {record.msg}\n")
 
 
-def run(cli_args: Sequence[str]) -> int:  # noqa: C901
-    # Enable all parser plugins
-    enabled_parserplugins = mdformat.plugins.PARSER_EXTENSIONS
-    # Enable code formatting for all languages that have a plugin installed
-    enabled_codeformatters = mdformat.plugins.CODEFORMATTERS
-
-    changes_ast = any(
-        getattr(plugin, "CHANGES_AST", False)
-        for plugin in enabled_parserplugins.values()
+def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
+    arg_parser = make_arg_parser(
+        mdformat.plugins._PARSER_EXTENSION_DISTS,
+        mdformat.plugins._CODEFORMATTER_DISTS,
+        mdformat.plugins.PARSER_EXTENSIONS,
     )
-
-    arg_parser = make_arg_parser(enabled_parserplugins, enabled_codeformatters)
     cli_opts = {
         k: v for k, v in vars(arg_parser.parse_args(cli_args)).items() if v is not None
     }
+    cli_core_opts, cli_plugin_opts = separate_core_and_plugin_opts(cli_opts)
+
     if not cli_opts["paths"]:
         print_paragraphs(["No files have been passed in. Doing nothing."])
         return 0
@@ -54,12 +47,23 @@ def run(cli_args: Sequence[str]) -> int:  # noqa: C901
     format_errors_found = False
     renderer_warning_printer = RendererWarningPrinter()
     for path in file_paths:
+        read_toml = read_toml_opts if cache_toml else read_toml_opts.__wrapped__
         try:
-            toml_opts, toml_path = read_toml_opts(path.parent if path else Path.cwd())
+            toml_opts, toml_path = read_toml(path.parent if path else Path.cwd())
         except InvalidConfError as e:
             print_error(str(e))
             return 1
-        opts: Mapping = {**DEFAULT_OPTS, **toml_opts, **cli_opts}
+
+        opts = {**DEFAULT_OPTS, **toml_opts, **cli_core_opts}
+
+        # Merge plugin options from CLI.
+        # Make a copy of opts["plugin"] to not mutate DEFAULT_OPTS or cached TOML.
+        opts["plugin"] = dict(opts["plugin"])
+        for plugin_id, plugin_opts in cli_plugin_opts.items():
+            if plugin_id in opts["plugin"]:
+                opts["plugin"][plugin_id] |= plugin_opts
+            else:
+                opts["plugin"][plugin_id] = plugin_opts
 
         if sys.version_info >= (3, 13):  # pragma: >=3.13 cover
             if is_excluded(path, opts["exclude"], toml_path, "exclude" in cli_opts):
@@ -75,6 +79,45 @@ def run(cli_args: Sequence[str]) -> int:  # noqa: C901
                 )
                 return 1
 
+        try:
+            enabled_parserplugins = (
+                mdformat.plugins.PARSER_EXTENSIONS
+                if opts["extensions"] is None
+                else {
+                    k: mdformat.plugins.PARSER_EXTENSIONS[k] for k in opts["extensions"]
+                }
+            )
+        except KeyError as e:
+            print_error(
+                "Invalid extension required.",
+                paragraphs=[
+                    f"The required {e.args[0]!r} extension is not available. "
+                    "Please install a plugin that adds the extension, "
+                    "or remove it from required extensions."
+                ],
+            )
+            return 1
+        try:
+            enabled_codeformatters = (
+                mdformat.plugins.CODEFORMATTERS
+                if opts["codeformatters"] is None
+                else {
+                    k: mdformat.plugins.CODEFORMATTERS[k]
+                    for k in opts["codeformatters"]
+                }
+            )
+        except KeyError as e:
+            print_error(
+                "Invalid code formatter required.",
+                paragraphs=[
+                    f"The required {e.args[0]!r} code formatter language "
+                    "is not available. "
+                    "Please install a plugin "
+                    "that adds support for the language, "
+                    "or remove it from required languages."
+                ],
+            )
+            return 1
         if path:
             path_str = str(path)
             # Unlike `path.read_text(encoding="utf-8")`, this preserves
@@ -82,7 +125,10 @@ def run(cli_args: Sequence[str]) -> int:  # noqa: C901
             original_str = path.read_bytes().decode()
         else:
             path_str = "-"
-            original_str = sys.stdin.read()
+            original_str = sys.stdin.buffer.read().decode()
+
+        # Lazy import to improve module import time
+        from mdformat.renderer import LOGGER as RENDERER_LOGGER
 
         formatted_str = mdformat.text(
             original_str,
@@ -90,46 +136,54 @@ def run(cli_args: Sequence[str]) -> int:  # noqa: C901
             extensions=enabled_parserplugins,
             codeformatters=enabled_codeformatters,
             _first_pass_contextmanager=log_handler_applied(
-                mdformat.renderer.LOGGER, renderer_warning_printer
+                RENDERER_LOGGER, renderer_warning_printer
             ),
             _filename=path_str,
         )
         newline = detect_newline_type(original_str, opts["end_of_line"])
         formatted_str = formatted_str.replace("\n", newline)
 
+        if formatted_str != original_str and opts["diff"]:
+            src_name = f"a/{path_str}"
+            dst_name = f"b/{path_str}"
+            print(diff(original_str, formatted_str, src_name, dst_name), end="")
+
         if opts["check"]:
             if formatted_str != original_str:
                 format_errors_found = True
                 print_error(f'File "{path_str}" is not formatted.')
-
-                if opts["diff"]:
-                    then = datetime.utcfromtimestamp(path.stat().st_mtime)
-                    now = datetime.utcnow()
-                    src_name = f"{path}\t{then} +0000"
-                    dst_name = f"{path}\t{now} +0000"
-
-                    diff_contents = diff(
-                        original_str, formatted_str, src_name, dst_name
-                    )
-                    print(diff_contents)
         else:
-            if not changes_ast and not is_md_equal(
-                original_str,
-                formatted_str,
-                options=opts,
-                extensions=enabled_parserplugins,
-                codeformatters=enabled_codeformatters,
+            changes_ast = any(
+                getattr(plugin, "CHANGES_AST", False)
+                for plugin in enabled_parserplugins.values()
+            )
+            if (
+                opts["validate"]
+                and not changes_ast
+                and not is_md_equal(
+                    original_str,
+                    formatted_str,
+                    options=opts,
+                    extensions=enabled_parserplugins,
+                    codeformatters=enabled_codeformatters,
+                )
             ):
                 print_error(
                     f'Could not format "{path_str}".',
                     paragraphs=[
-                        "The formatted Markdown renders to different HTML than the input Markdown. "  # noqa: E501
-                        "This is likely a bug in mdformat. "
-                        "Please create an issue report here, including the input Markdown: "  # noqa: E501
-                        "https://github.com/executablebooks/mdformat/issues",
+                        "Formatted Markdown renders to different HTML than input Markdown. "  # noqa: E501
+                        "This is a bug in mdformat or one of its installed plugins. "
+                        "Please retry without any plugins installed. "
+                        "If this error persists, "
+                        "report an issue including the input Markdown "
+                        "on https://github.com/hukkin/mdformat/issues. "
+                        "If not, "
+                        "report an issue on the malfunctioning plugin's issue tracker.",
                     ],
                 )
                 return 1
+            if opts["diff"]:
+                continue
             if path:
                 if formatted_str != original_str:
                     path.write_bytes(formatted_str.encode())
@@ -150,15 +204,15 @@ def validate_wrap_arg(value: str) -> str | int:
 
 
 def make_arg_parser(
+    parser_extension_dists: Mapping[str, tuple[str, list[str]]],
+    codeformatter_dists: Mapping[str, tuple[str, list[str]]],
     parser_extensions: Mapping[str, mdformat.plugins.ParserExtensionInterface],
-    codeformatters: Mapping[str, Callable[[str, str], str]],
 ) -> argparse.ArgumentParser:
-    plugin_versions_str = get_plugin_versions_str(parser_extensions, codeformatters)
+    epilog = get_plugin_info_str(parser_extension_dists, codeformatter_dists)
     parser = argparse.ArgumentParser(
         description="CommonMark compliant Markdown formatter",
-        epilog=(
-            f"Installed plugins: {plugin_versions_str}" if plugin_versions_str else None
-        ),
+        epilog=(epilog if epilog else None),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("paths", nargs="*", help="files to format")
     parser.add_argument(
@@ -167,11 +221,21 @@ def make_arg_parser(
     parser.add_argument(
         "--diff",
         action="store_true",
-        help="show diff of what would be changed when running with --check",
+        help="show a diff of what would be changed",
+    )
+    parser.add_argument(
+        "--no-validate",
+        action="store_const",
+        const=False,
+        dest="validate",
+        help="do not validate that the rendered HTML is consistent",
     )
     version_str = f"mdformat {mdformat.__version__}"
-    if plugin_versions_str:
-        version_str += f" ({plugin_versions_str})"
+    plugin_version_str = get_plugin_version_str(
+        {**parser_extension_dists, **codeformatter_dists}
+    )
+    if plugin_version_str:
+        version_str += f" ({plugin_version_str})"
     parser.add_argument("--version", action="version", version=version_str)
     parser.add_argument(
         "--number",
@@ -198,10 +262,78 @@ def make_arg_parser(
             help="exclude files that match the Unix-style glob pattern "
             "(multiple allowed)",
         )
-    for plugin in parser_extensions.values():
-        if hasattr(plugin, "add_cli_options"):
-            plugin.add_cli_options(parser)
+    extensions_group = parser.add_mutually_exclusive_group()
+    extensions_group.add_argument(
+        "--extensions",
+        action="append",
+        metavar="EXTENSION",
+        help="require and enable an extension plugin "
+        "(multiple allowed) "
+        "(use `--no-extensions` to disable) "
+        "(default: all enabled)",
+    )
+    extensions_group.add_argument(
+        "--no-extensions",
+        action="store_const",
+        const=(),
+        dest="extensions",
+        help=argparse.SUPPRESS,
+    )
+    codeformatters_group = parser.add_mutually_exclusive_group()
+    codeformatters_group.add_argument(
+        "--codeformatters",
+        action="append",
+        metavar="LANGUAGE",
+        help="require and enable a code formatter plugin "
+        "(multiple allowed) "
+        "(use `--no-codeformatters` to disable) "
+        "(default: all enabled)",
+    )
+    codeformatters_group.add_argument(
+        "--no-codeformatters",
+        action="store_const",
+        const=(),
+        dest="codeformatters",
+        help=argparse.SUPPRESS,
+    )
+    for plugin_id, plugin in parser_extensions.items():
+        if hasattr(plugin, "add_cli_argument_group"):
+            group = parser.add_argument_group(title=f"{plugin_id} plugin")
+            plugin.add_cli_argument_group(group)
+            for action in group._group_actions:
+                action.dest = f"plugin.{plugin_id}.{action.dest}"
+                if action.default not in {None, argparse.SUPPRESS}:
+                    import warnings
+
+                    plugin_file, plugin_line = get_source_file_and_line(plugin)
+                    warnings.warn_explicit(
+                        f"The `default` ({action.default!r}) for {action.option_strings!r} from the {plugin_id!r} plugin, will always override any value configured in TOML. The only supported CLI defaults are `None` or `argparse.SUPPRESS`. To resolve, consider refactoring to `.add_argument(..., default=None)` ",  # noqa: E501
+                        DeprecationWarning,
+                        filename=plugin_file,
+                        lineno=plugin_line,
+                    )
     return parser
+
+
+def separate_core_and_plugin_opts(opts: Mapping) -> tuple[dict, dict]:
+    """Move dotted keys like 'plugin.gfm.some_key' to a separate mapping.
+
+    Return a tuple of two mappings. First is for core CLI options, the
+    second for plugin options. E.g. 'plugin.gfm.some_key' belongs to the
+    second mapping under {"gfm": {"some_key": <value>}}.
+    """
+    cli_core_opts = {}
+    cli_plugin_opts: dict = {}
+    for k, v in opts.items():
+        if k.startswith("plugin."):
+            _, plugin_id, plugin_conf_key = k.split(".", maxsplit=2)
+            if plugin_id in cli_plugin_opts:
+                cli_plugin_opts[plugin_id][plugin_conf_key] = v
+            else:
+                cli_plugin_opts[plugin_id] = {plugin_conf_key: v}
+        else:
+            cli_core_opts[k] = v
+    return cli_core_opts, cli_plugin_opts
 
 
 class InvalidPath(Exception):
@@ -256,10 +388,7 @@ def is_excluded(  # pragma: >=3.13 cover
     except ValueError:
         return False
 
-    return any(
-        relative_path.full_match(pattern)  # type: ignore[attr-defined]
-        for pattern in patterns
-    )
+    return any(relative_path.full_match(pattern) for pattern in patterns)
 
 
 def _normalize_path(path: Path) -> Path:
@@ -292,6 +421,17 @@ def print_error(title: str, paragraphs: Iterable[str] = ()) -> None:
     print_paragraphs(paragraphs)
 
 
+@functools.lru_cache
+def cached_textwrapper(width: int) -> textwrap.TextWrapper:
+    return textwrap.TextWrapper(
+        break_long_words=False,
+        break_on_hyphens=False,
+        width=width,
+        expand_tabs=False,
+        replace_whitespace=False,
+    )
+
+
 def wrap_paragraphs(paragraphs: Iterable[str]) -> str:
     """Wrap and concatenate paragraphs.
 
@@ -304,16 +444,14 @@ def wrap_paragraphs(paragraphs: Iterable[str]) -> str:
         wrap_width = terminal_width
     else:
         wrap_width = 80
-    wrapper = textwrap.TextWrapper(
-        break_long_words=False, break_on_hyphens=False, width=wrap_width
-    )
+    wrapper = cached_textwrapper(wrap_width)
     return "\n\n".join(wrapper.fill(p) for p in paragraphs) + "\n"
 
 
 @contextlib.contextmanager
 def log_handler_applied(
     logger: logging.Logger, handler: logging.Handler
-) -> Generator[None, None, None]:
+) -> Generator[None]:
     logger.addHandler(handler)
     try:
         yield
@@ -321,35 +459,43 @@ def log_handler_applied(
         logger.removeHandler(handler)
 
 
-def get_package_name(obj: object) -> str:
-    # Packages and modules should have `__package__`
-    if hasattr(obj, "__package__"):
-        package_name = obj.__package__
-    else:  # class or function
-        module_name = obj.__module__
-        package_name = module_name.split(".", maxsplit=1)[0]
-    return package_name
-
-
-def get_plugin_versions(
-    parser_extensions: Mapping[str, mdformat.plugins.ParserExtensionInterface],
-    codeformatters: Mapping[str, Callable[[str, str], str]],
-) -> dict[str, str]:
-    versions = {}
-    for iface in itertools.chain(parser_extensions.values(), codeformatters.values()):
-        package_name = get_package_name(iface)
-        try:
-            package_version = importlib_metadata.version(package_name)
-        except importlib_metadata.PackageNotFoundError:
-            # In test scenarios the package may not exist
-            package_version = "unknown"
-        versions[package_name] = package_version
-    return versions
-
-
-def get_plugin_versions_str(
-    parser_extensions: Mapping[str, mdformat.plugins.ParserExtensionInterface],
-    codeformatters: Mapping[str, Callable[[str, str], str]],
+def get_plugin_info_str(
+    parser_extension_dists: Mapping[str, tuple[str, list[str]]],
+    codeformatter_dists: Mapping[str, tuple[str, list[str]]],
 ) -> str:
-    plugin_versions = get_plugin_versions(parser_extensions, codeformatters)
-    return ", ".join(f"{name}: {version}" for name, version in plugin_versions.items())
+    info = ""
+    if codeformatter_dists:
+        info += "installed codeformatters:"
+        for dist, dist_info in codeformatter_dists.items():
+            langs = ", ".join(dist_info[1])
+            info += f"\n  {dist}: {langs}"
+    if parser_extension_dists:
+        if info:
+            info += "\n\n"
+        info += "installed extensions:"
+        for dist, dist_info in parser_extension_dists.items():
+            extensions = ", ".join(dist_info[1])
+            info += f"\n  {dist}: {extensions}"
+    return info
+
+
+def get_plugin_version_str(dist_map: Mapping[str, tuple[str, list[str]]]) -> str:
+    return ", ".join(
+        f"{dist_name} {dist_info[0]}" for dist_name, dist_info in dist_map.items()
+    )
+
+
+def get_source_file_and_line(obj: object) -> tuple[str, int]:
+    import inspect
+
+    try:
+        filename = inspect.getsourcefile(obj)  # type: ignore[arg-type]
+        if filename is None:  # pragma: no cover
+            filename = "not found"
+    except TypeError:  # pragma: no cover
+        filename = "built-in object"
+    try:
+        _, lineno = inspect.getsourcelines(obj)  # type: ignore[arg-type]
+    except (OSError, TypeError):  # pragma: no cover
+        lineno = 0
+    return filename, lineno

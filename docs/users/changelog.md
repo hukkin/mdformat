@@ -3,6 +3,81 @@
 This log documents all Python API or CLI breaking backwards incompatible changes.
 Note that there is currently no guarantee for a stable Markdown formatting style across versions.
 
+## 1.0.0
+
+- Removed
+  - Python 3.9 support
+  - `mdformat.codepoints.ASCII_WHITESPACE` (deprecated since 0.7.20)
+  - `mdformat.plugins.ParserExtensionInterface.add_cli_options` (deprecated since 0.7.19)
+- Deprecated
+  - Default values other than `None` or `argparse.SUPPRESS` in CLI options added by plugins.
+    Thank you, [Kyle King](https://github.com/KyleKing), for the PR.
+- Added
+  - markdown-it-py v4 support
+  - CommonMark 0.31.2 support
+- Fixed
+  - Read UTF-8 from standard input on all systems.
+    Thank you, [Christopher Prohm](https://github.com/chmp), for the PR.
+
+## 0.7.22
+
+- Performance
+  - Improved import time and performance of CLI invocations that do not format Markdown.
+- Fixed
+  - No longer mutate cached TOML options or `_conf.DEFAULT_OPTS`.
+    This should avoid some hard to debug issues in plugins' tests.
+- Added
+  - `cache_toml` keyword argument to `_cli.run` for disabling TOML caching.
+    This is useful in tests written for plugins.
+
+## 0.7.21
+
+- Fixed
+  - Circular import in plugins that import from `mdformat.renderer`.
+
+## 0.7.20
+
+**NOTE:** This release was yanked from PyPI.
+
+- Deprecated
+  - `mdformat.codepoints.ASCII_WHITESPACE`.
+    CommonMark no longer defines this since v0.30.
+- Added
+  - `--no-validate` flag for disabling the AST safety check.
+    Thank you, [Kyle King](https://github.com/KyleKing), for the PR.
+  - Added the delete control character to `mdformat.codepoints.ASCII_CTRL` as per CommonMark v0.30
+- Fixed
+  - The AST safety check not triggering when a code formatter plugin is in use,
+    two or more code blocks are in the same file,
+    and unsafe formatting happens in between the code blocks.
+
+## 0.7.19
+
+- Deprecated
+  - Plugin interface: `mdformat.plugins.ParserExtensionInterface.add_cli_options`.
+    The replacing interface is `mdformat.plugins.ParserExtensionInterface.add_cli_argument_group`.
+- Fixed
+  - Incorrect line wrap on lines right after a hard break.
+    Thank you, [MDW](https://github.com/mdeweerd), for the issue.
+  - Adding an extra leading space to paragraphs that start with space in line wrap modes.
+  - An error on empty paragraph (Unicode space only) surrounded by non-paragraph elements.
+    Thank you, [Nico Schlömer](https://github.com/nschloe), for the issue.
+- Added
+  - Plugin interface: `mdformat.plugins.ParserExtensionInterface.add_cli_argument_group`.
+    With this plugins can now read CLI arguments merged with values from `.mdformat.toml`.
+  - Option to select enabled (and required) extensions and code formatter languages
+    (`--extensions` and `--codeformatters` on the CLI,
+    and `extensions` and `codeformatters` keys in TOML).
+  - Improved plugin list at the end of `--help` output:
+    List languages supported by codeformatter plugin distributions,
+    and parser extensions added by parser extension distributions.
+- Changed
+  - Style: No longer escape square bracket enclosures.
+  - Style: No longer escape less than sign followed by space character.
+  - Style: Convert tabs to spaces. Reduce space sequences to one space.
+- Improved
+  - Plugin interface: A trailing newline is added to fenced code blocks if a plugin fails to add it.
+
 ## 0.7.18
 
 - Added
@@ -166,9 +241,9 @@ Note that there is currently no guarantee for a stable Markdown formatting style
 
 - Fixed
   - Warnings being printed twice when wrap mode is other than "keep"
-    ([#167](https://github.com/executablebooks/mdformat/pull/167))
+    ([#167](https://github.com/hukkin/mdformat/pull/167))
   - An extra newline being added when consecutive lines' width equals wrap width
-    ([#166](https://github.com/executablebooks/mdformat/pull/166))
+    ([#166](https://github.com/hukkin/mdformat/pull/166))
 
 ## 0.6.3
 
@@ -207,23 +282,23 @@ Note that there is currently no guarantee for a stable Markdown formatting style
 
 - Fixed
   - CLI crash when formatting standard error output and the operating system reports a terminal window width of zero or less
-    ([#131](https://github.com/executablebooks/mdformat/issues/131)).
+    ([#131](https://github.com/hukkin/mdformat/issues/131)).
     Thank you [ehontoria](https://github.com/ehontoria) for the issue.
 
 ## 0.5.6
 
 - Changed
   - Style: Reduce asterisk escaping
-    ([#120](https://github.com/executablebooks/mdformat/issues/120))
+    ([#120](https://github.com/hukkin/mdformat/issues/120))
   - Style: Reduce underscore escaping
-    ([#119](https://github.com/executablebooks/mdformat/issues/119)).
+    ([#119](https://github.com/hukkin/mdformat/issues/119)).
     Thank you [dustinmichels](https://github.com/dustinmichels) for the issue.
 
 ## 0.5.5
 
 - Changed
   - Style: Don't convert shortcut reference links into full reference links
-    ([#111](https://github.com/executablebooks/mdformat/issues/111))
+    ([#111](https://github.com/hukkin/mdformat/issues/111))
 
 ## 0.5.4
 
@@ -254,25 +329,25 @@ Note that there is currently no guarantee for a stable Markdown formatting style
 - Added
   - `CHANGES_AST` to extension plugin API.
     The feature allows plugins that alter Markdown AST to skip validation
-    ([#49](https://github.com/executablebooks/mdformat/pull/49)).
+    ([#49](https://github.com/hukkin/mdformat/pull/49)).
 
 ## 0.3.2
 
 - Changed
-  - Style: Keep reference links as reference links ([#32](https://github.com/executablebooks/mdformat/issues/32)).
+  - Style: Keep reference links as reference links ([#32](https://github.com/hukkin/mdformat/issues/32)).
     Thank you [chrisjsewell](https://github.com/chrisjsewell) for the issue and the PR.
 - Added
-  - Option to number ordered list items consecutively using the `--number` flag ([#33](https://github.com/executablebooks/mdformat/issues/33)).
+  - Option to number ordered list items consecutively using the `--number` flag ([#33](https://github.com/hukkin/mdformat/issues/33)).
     Thank you [chrisjsewell](https://github.com/chrisjsewell) for the issue and the PR.
-  - Parser extension plugins can now add their own CLI / Python API options ([#35](https://github.com/executablebooks/mdformat/pull/35)).
+  - Parser extension plugins can now add their own CLI / Python API options ([#35](https://github.com/hukkin/mdformat/pull/35)).
     Thanks [chrisjsewell](https://github.com/chrisjsewell) for the PR.
 - Fixed
-  - Image links that require surrounding angle brackets no longer break formatting ([#40](https://github.com/executablebooks/mdformat/issues/40)).
+  - Image links that require surrounding angle brackets no longer break formatting ([#40](https://github.com/hukkin/mdformat/issues/40)).
 
 ## 0.3.1
 
 - Added
-  - Plugin system for extending the parser ([#13](https://github.com/executablebooks/mdformat/issues/13)).
+  - Plugin system for extending the parser ([#13](https://github.com/hukkin/mdformat/issues/13)).
     Thank you [chrisjsewell](https://github.com/chrisjsewell) for the issue and the PR.
   - Exported `mdformat.renderer.MDRenderer` and `mdformat.renderer.MARKERS`
 

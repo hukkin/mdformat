@@ -1,13 +1,14 @@
 version: 2
 
 build:
-   os: 'ubuntu-lts-latest'
-   tools:
-      python: '3.11'
+  os: 'ubuntu-lts-latest'
+  tools:
+    python: '3.13'
 
 sphinx:
-   fail_on_warning: true
+  configuration: docs/conf.py
+  fail_on_warning: true
 
 python:
-   install:
-   - requirements: docs/requirements.txt
+  install:
+  - requirements: docs/requirements.txt

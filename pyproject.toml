@@ -1,26 +1,25 @@
 [build-system]
-requires = ["setuptools>=61.0.0"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 
 [project]
 name = "mdformat"
-version = "0.7.18"  # DO NOT EDIT THIS LINE MANUALLY. LET bump2version UTILITY DO IT
+version = "1.0.0"  # DO NOT EDIT THIS LINE MANUALLY. LET bump2version UTILITY DO IT
 description = "CommonMark compliant Markdown formatter"
 authors = [
     { name = "Taneli Hukkinen", email = "hukkin@users.noreply.github.com" },
 ]
-license = { file = "LICENSE" }
-requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
 dependencies = [
-    'markdown-it-py >=1.0.0,<4.0.0',
+    'markdown-it-py>=1,<5',
     'tomli >=1.1.0; python_version < "3.11"',
-    'importlib-metadata >=3.6.0; python_version < "3.10"',
 ]
 readme = "README.md"
 classifiers = [
     "Environment :: Console",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
@@ -32,7 +31,7 @@ classifiers = [
 keywords = ["mdformat", "markdown", "commonmark", "formatter", "pre-commit"]
 
 [project.urls]
-"Homepage" = "https://github.com/executablebooks/mdformat"
+"Homepage" = "https://github.com/hukkin/mdformat"
 "Documentation" = "https://mdformat.readthedocs.io"
 "Style guide" = "https://mdformat.readthedocs.io/en/stable/users/style.html"
 "Changelog" = "https://mdformat.readthedocs.io/en/stable/users/changelog.html"
@@ -60,77 +59,108 @@ xfail_strict = true
 
 
 [tool.tox]
-legacy_tox_ini = '''
-[tox]
+requires = ["tox>=4.21.1"]
 # Only run pytest envs when no args given to tox
-envlist = py{39,310,311,312,313}
-isolated_build = True
+env_list = ["3.10", "3.11", "3.12", "3.13"]
 
-[testenv:py{39,310,311,312,313}]
-description = run tests
-deps =
-    -r tests/requirements.txt
-commands =
-    pytest {posargs:--cov}
+[tool.tox.env_run_base]
+description = "run tests under {base_python}"
+deps = [
+    "-r tests/requirements.txt",
+]
+commands = [
+    ["pytest", { replace = "posargs", default = ["--cov"], extend = true }],
+]
 
-[testenv:profile]
-description = run profiler (use e.g. `firefox .tox/prof/combined.svg` to open)
-deps =
-    -r tests/requirements.txt
-    pytest-profiling
-commands =
-    pytest tests/test_for_profiler.py --profile-svg --pstats-dir "{toxworkdir}/prof"
-    python -c 'import pathlib; print("profiler svg output under file://\{0\}".format(pathlib.Path(r"{toxworkdir}") / "prof" / "combined.svg"))'
+[tool.tox.env."profile"]
+description = "run profiler (use e.g. `firefox .tox/prof/combined.svg` to open)"
+deps = [
+    "-r tests/requirements.txt",
+    "pytest-profiling",
+]
+commands = [
+    ["pytest", "tests/test_for_profiler.py", "--profile-svg", "--pstats-dir", "{toxworkdir}/prof"],
+    ["python", "-c", 'import pathlib; print("profiler svg output under file://\{0\}".format(pathlib.Path(r"{toxworkdir}") / "prof" / "combined.svg"))'],
+]
 
-[testenv:pre-commit]
-description = run linters (except mypy)
-skip_install = True
-deps = pre-commit
-commands = pre-commit run {posargs:--all}
+[tool.tox.env."pre-commit"]
+description = "run linters (except mypy)"
+skip_install = true
+deps = ["pre-commit"]
+commands = [
+    ["pre-commit", "run", { replace = "posargs", default = ["--all-files"], extend = true }],
+]
 
-[testenv:mypy]
-description = run mypy
-basepython = python3.11
-deps =
-    -r tests/requirements.txt
-    mypy==1.11.2
-commands =
-    mypy {posargs:src/ tests/}
+[tool.tox.env."mypy"]
+description = "run mypy"
+basepython = ["python3.13"]
+deps = [
+    "-r tests/requirements.txt",
+    "mypy==1.17.1",
+]
+commands = [
+    ["mypy", { replace = "posargs", default = ["src/", "tests/"], extend = true }],
+]
 
-[testenv:hook]
-description = test mdformat's own pre-commit hook against the README file
-skip_install = True
-deps = pre-commit
-commands =
-    pre-commit try-repo . mdformat --files README.md
+[tool.tox.env."hook"]
+description = "test mdformat's own pre-commit hook against the README file"
+skip_install = true
+deps = ["pre-commit"]
+commands = [
+    ["pre-commit", "try-repo", ".", "mdformat", "--files", "README.md"],
+]
 
-[testenv:cli]
-description = run mdformat's own CLI
-commands = mdformat {posargs}
+[tool.tox.env."cli"]
+description = "run mdformat's own CLI"
+deps = []
+commands = [
+    ["mdformat", { replace = "posargs", extend = true }],
+]
 
-[testenv:docs]
-description = invoke sphinx-build to build the HTML docs
-skip_install = True
-deps =
-    -r docs/requirements.txt
-commands =
-    sphinx-build -d "{toxworkdir}/docs_doctree" docs/ "{toxworkdir}/docs_out" -W -b html {posargs}
-    python -c 'import pathlib; print("documentation available under file://\{0\}".format(pathlib.Path(r"{toxworkdir}") / "docs_out" / "index.html"))'
+[tool.tox.env."docs"]
+description = "invoke sphinx-build to build the HTML docs"
+skip_install = true
+deps = [
+    "-r docs/requirements.txt",
+]
+commands = [
+    ["sphinx-build", "-d", "{toxworkdir}/docs_doctree", "docs/", "{toxworkdir}/docs_out", "-W", "-b", "html", { replace = "posargs", extend = true }],
+    ["python", "-c", 'import pathlib; print("documentation available under file://\{0\}".format(pathlib.Path(r"{toxworkdir}") / "docs_out" / "index.html"))'],
+]
 
-[testenv:fuzz]
-description = run the fuzzer (needs "apt install clang")
-deps =
-    -r fuzzer/requirements.txt
-allowlist_externals =
-    mkdir
-    cp
-commands =
+[tool.tox.env."fuzz"]
+description = 'run the fuzzer (needs "apt install clang")'
+deps = [
+    "-r fuzzer/requirements.txt",
+]
+allowlist_externals = [
+    "mkdir",
+    "cp",
+]
+commands = [
     # Create a folder for persistent corpus and use README.md as initial seed
-    mkdir -p {toxworkdir}/fuzzer-corpus
-    cp -n README.md {toxworkdir}/fuzzer-corpus/README.md
+    ["mkdir", "-p", "{toxworkdir}/fuzzer-corpus"],
+    ["cp", "-n", "README.md", "{toxworkdir}/fuzzer-corpus/README.md"],
     # Run fuzzer
-    python fuzzer/fuzz.py {toxworkdir}/fuzzer-corpus {posargs:-len_control=10000}
-'''
+    ["python", "fuzzer/fuzz.py", "{toxworkdir}/fuzzer-corpus", { replace = "posargs", default = ["-len_control=10000"], extend = true }],
+]
+
+[tool.tox.env."benchmark"]
+description = "benchmark mdformat against local doc files"
+deps = []
+commands = [
+    ["python", "-c", "print('Wrap mode: keep')"],
+    ["python", "-m", "timeit", "from mdformat._cli import run", 'run(["README.md", "docs/", "--check"])'],
+    ["python", "-c", "print('Wrap mode: 50')"],
+    ["python", "-m", "timeit", "from mdformat._cli import run", 'run(["README.md", "docs/", "--check", "--wrap", "50"])'],
+]
+
+[tool.tox.env."benchmark-import"]
+description = "Measure module import times. Tox sends mdformat output to stderr, so to filter use e.g. `tox -e benchmark-import 2> >(grep mdformat)`."
+deps = []
+commands = [
+    ["python", "-X", "importtime", "-m", "mdformat", "--version"],
+]
 
 
 [tool.coverage.run]

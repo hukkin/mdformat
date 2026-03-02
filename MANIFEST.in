@@ -1,1 +1,1 @@
-include src/mdformat/py.typed
+prune tests/

@@ -24,3 +24,5 @@ def test_for_profiler():
     docs_path = PROJECT_ROOT / "docs"
     readme_path = PROJECT_ROOT / "README.md"
     assert run([str(docs_path), str(readme_path), "--check"]) == 0
+    # Also profile --wrap=INT code
+    run([str(docs_path), str(readme_path), "--check", "--wrap", "50"])

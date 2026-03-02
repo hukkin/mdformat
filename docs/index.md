@@ -55,6 +55,6 @@ contributors/contributing.md
 caption: External links
 hidden: true
 ---
-GitHub repository <https://github.com/executablebooks/mdformat>
+GitHub repository <https://github.com/hukkin/mdformat>
 PyPI page <https://pypi.org/project/mdformat/>
 ```

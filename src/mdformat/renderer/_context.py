@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Mapping, MutableMapping
 from contextlib import contextmanager
+import functools
 import logging
 import re
 import textwrap
@@ -14,21 +15,23 @@ from markdown_it.rules_block.html_block import HTML_SEQUENCES
 from mdformat import codepoints
 from mdformat._conf import DEFAULT_OPTS
 from mdformat.renderer._util import (
-    RE_CHAR_REFERENCE,
     decimalify_leading,
     decimalify_trailing,
     escape_asterisk_emphasis,
+    escape_less_than_sign,
+    escape_square_brackets,
     escape_underscore_emphasis,
     get_list_marker_type,
     is_tight_list,
     is_tight_list_item,
     longest_consecutive_sequence,
     maybe_add_link_brackets,
+    re_char_reference,
 )
-from mdformat.renderer.typing import Postprocess, Render
 
 if TYPE_CHECKING:
     from mdformat.renderer import RenderTreeNode
+    from mdformat.renderer.typing import Postprocess, Render
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,6 +41,13 @@ WRAP_POINT = "\x00"
 # A marker used to indicate location of a character that should be preserved
 # during word wrap. Should be converted to the actual character after wrap.
 PRESERVE_CHAR = "\x00"
+RE_PRESERVE_CHAR = re.compile(re.escape(PRESERVE_CHAR))
+
+RE_UNICODE_WS_OR_WRAP_POINT = re.compile(
+    rf"[{re.escape(''.join(codepoints.UNICODE_WHITESPACE))}]"
+    "|"
+    rf"{re.escape(WRAP_POINT)}+"
+)
 
 
 def make_render_children(separator: str) -> Render:
@@ -109,20 +119,25 @@ def text(node: RenderTreeNode, context: RenderContext) -> str:
     """
     text = node.content
 
+    # Convert tabs to spaces
+    text = text.replace("\t", " ")
+    # Reduce tabs and spaces to one space
+    text = re.sub(" {2,}", " ", text)
+
     # Escape backslash to prevent it from making unintended escapes.
     # This escape has to be first, else we start multiplying backslashes.
     text = text.replace("\\", "\\\\")
 
     text = escape_asterisk_emphasis(text)  # Escape emphasis/strong marker.
     text = escape_underscore_emphasis(text)  # Escape emphasis/strong marker.
-    text = text.replace("[", "\\[")  # Escape link label enclosure
-    text = text.replace("]", "\\]")  # Escape link label enclosure
-    text = text.replace("<", "\\<")  # Escape URI enclosure
+    # Escape link label and link ref enclosures
+    text = escape_square_brackets(text, context.env["used_refs"])
+    text = escape_less_than_sign(text)  # Escape URI enclosure and HTML.
     text = text.replace("`", "\\`")  # Escape code span marker
 
     # Escape "&" if it starts a sequence that can be interpreted as
     # a character reference.
-    text = RE_CHAR_REFERENCE.sub(r"\\\g<0>", text)
+    text = re_char_reference().sub(r"\\\g<0>", text)
 
     # The parser can give us consecutive newlines which can break
     # the markdown structure. Replace two or more consecutive newlines
@@ -151,8 +166,8 @@ def fence(node: RenderTreeNode, context: RenderContext) -> str:
     fence_char = "~" if "`" in info_str else "`"
 
     # Format the code block using enabled codeformatter funcs
-    if lang in context.options.get("codeformatters", {}):
-        fmt_func = context.options["codeformatters"][lang]
+    fmt_func = context.options.get("codeformatters", {}).get(lang)
+    if fmt_func:
         try:
             code_block = fmt_func(code_block, info_str)
         except Exception:
@@ -167,6 +182,9 @@ def fence(node: RenderTreeNode, context: RenderContext) -> str:
             if filename:
                 warn_msg += f". Filename: {filename}"
             LOGGER.warning(warn_msg)
+        else:
+            if code_block and code_block[-1] != "\n":
+                code_block += "\n"
 
     # The code block must not include as long or longer sequence of `fence_char`s
     # as the fence string itself
@@ -316,6 +334,17 @@ def blockquote(node: RenderTreeNode, context: RenderContext) -> str:
         return quoted_str
 
 
+@functools.lru_cache
+def cached_textwrapper(width: int) -> textwrap.TextWrapper:
+    return textwrap.TextWrapper(
+        break_long_words=False,
+        break_on_hyphens=False,
+        width=width,
+        expand_tabs=False,
+        replace_whitespace=False,
+    )
+
+
 def _wrap(text: str, *, width: int | Literal["no"]) -> str:
     """Wrap text at locations pointed by `WRAP_POINT`s.
 
@@ -327,45 +356,35 @@ def _wrap(text: str, *, width: int | Literal["no"]) -> str:
     if width == "no":
         return _recover_preserve_chars(text, replacements)
 
-    wrapper = textwrap.TextWrapper(
-        break_long_words=False,
-        break_on_hyphens=False,
-        width=width,
-        expand_tabs=False,
-        replace_whitespace=False,
-    )
+    wrapper = cached_textwrapper(width)
     wrapped = wrapper.fill(text)
     wrapped = _recover_preserve_chars(wrapped, replacements)
-    return " " + wrapped if text.startswith(" ") else wrapped
+    return wrapped
 
 
-def _prepare_wrap(text: str) -> tuple[str, str]:
+def _prepare_wrap(text: str) -> tuple[str, list[str]]:
     """Prepare text for wrap.
 
     Convert `WRAP_POINT`s to spaces. Convert whitespace to
-    `PRESERVE_CHAR`s. Return a tuple with the prepared string, and
-    another string consisting of replacement characters for
-    `PRESERVE_CHAR`s.
+    `PRESERVE_CHAR`s. Return a tuple with the prepared string, and a
+    list consisting of replacement characters for `PRESERVE_CHAR`s.
     """
-    result = ""
-    replacements = ""
-    for c in text:
-        if c == WRAP_POINT:
-            if not result or result[-1] != " ":
-                result += " "
-        elif c in codepoints.UNICODE_WHITESPACE:
-            result += PRESERVE_CHAR
-            replacements += c
-        else:
-            result += c
+    replacements = []
+
+    def replacer(match: re.Match[str]) -> str:
+        first_char = match.group()[0]
+        if first_char == WRAP_POINT:
+            return " "
+        replacements.append(first_char)
+        return PRESERVE_CHAR
+
+    result = RE_UNICODE_WS_OR_WRAP_POINT.sub(replacer, text)
     return result, replacements
 
 
-def _recover_preserve_chars(text: str, replacements: str) -> str:
-    replacement_iterator = iter(replacements)
-    return "".join(
-        next(replacement_iterator) if c == PRESERVE_CHAR else c for c in text
-    )
+def _recover_preserve_chars(text: str, replacements: Iterable[str]) -> str:
+    iter_replacements = iter(replacements)
+    return RE_PRESERVE_CHAR.sub(lambda _: next(iter_replacements), text)
 
 
 def paragraph(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: C901
@@ -377,7 +396,14 @@ def paragraph(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: C90
         if isinstance(wrap_mode, int):
             wrap_mode -= context.env["indent_width"]
             wrap_mode = max(1, wrap_mode)
-        text = _wrap(text, width=wrap_mode)
+        # Newlines should be mostly WRAP_POINTs by now, but there are
+        # exceptional newlines that need to be preserved:
+        # - hard breaks: newline defines the hard break
+        # - html inline: newline vs space can be the difference between
+        #                html block and html inline
+        # Split the text and word wrap each section separately.
+        sections = text.split("\n")
+        text = "\n".join(_wrap(s, width=wrap_mode) for s in sections)
 
     # A paragraph can start or end in whitespace e.g. if the whitespace was
     # in decimal representation form. We need to re-decimalify it, one reason being
@@ -605,7 +631,7 @@ class RenderContext(NamedTuple):
     env: MutableMapping
 
     @contextmanager
-    def indented(self, width: int) -> Generator[None, None, None]:
+    def indented(self, width: int) -> Generator[None]:
         self.env["indent_width"] += width
         try:
             yield
