@@ -114,6 +114,33 @@ def test_check__fail(tmp_path):
     assert run((str(file_path), "--check")) == 1
 
 
+def test_check_fail_diff(capsys, tmp_path):
+    """Test for --check flag and --diff flag combined on unformatted files.
+
+    Test that when an unformatted file fails, a diff is writtin to
+    stdout.
+    """
+
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text(UNFORMATTED_MARKDOWN)
+    assert run((str(file_path), "--check", "--diff")) == 1
+    captured = capsys.readouterr()
+    assert str(file_path) in captured.out
+    assert "-\n-\n # A header\n-\n" in captured.out
+
+
+def test_diff_without_check(capsys, tmp_path):
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text(UNFORMATTED_MARKDOWN)
+
+    assert run((str(file_path), "--diff")) == 0
+
+    captured = capsys.readouterr()
+    assert str(file_path) in captured.out
+    assert "-\n-\n # A header\n-\n" in captured.out
+    assert file_path.read_text() == UNFORMATTED_MARKDOWN
+
+
 def test_check__multi_fail(capsys, tmp_path):
     """Test for --check flag when multiple files are unformatted.
 

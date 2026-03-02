@@ -13,6 +13,7 @@ import textwrap
 
 import mdformat
 from mdformat._conf import DEFAULT_OPTS, InvalidConfError, read_toml_opts
+from mdformat._output import diff
 from mdformat._util import detect_newline_type, is_md_equal
 import mdformat.plugins
 
@@ -142,6 +143,11 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
         newline = detect_newline_type(original_str, opts["end_of_line"])
         formatted_str = formatted_str.replace("\n", newline)
 
+        if formatted_str != original_str and opts["diff"]:
+            src_name = f"a/{path_str}"
+            dst_name = f"b/{path_str}"
+            print(diff(original_str, formatted_str, src_name, dst_name), end="")
+
         if opts["check"]:
             if formatted_str != original_str:
                 format_errors_found = True
@@ -176,6 +182,8 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
                     ],
                 )
                 return 1
+            if opts["diff"]:
+                continue
             if path:
                 if formatted_str != original_str:
                     path.write_bytes(formatted_str.encode())
@@ -209,6 +217,11 @@ def make_arg_parser(
     parser.add_argument("paths", nargs="*", help="files to format")
     parser.add_argument(
         "--check", action="store_true", help="do not apply changes to files"
+    )
+    parser.add_argument(
+        "--diff",
+        action="store_true",
+        help="show a diff of what would be changed",
     )
     parser.add_argument(
         "--no-validate",
