@@ -31,7 +31,7 @@ release = '1.0.0'  # DO NOT EDIT THIS LINE MANUALLY. LET bump2version UTILITY DO
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['myst_parser']
+extensions = ['myst_parser', 'sphinx_copybutton']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
