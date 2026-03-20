@@ -237,6 +237,11 @@ def make_arg_parser(
         help="paragraph word wrap mode (default: keep)",
     )
     parser.add_argument(
+        "--frontmatter",
+        choices=("preserve", "no"),
+        help="YAML frontmatter handling mode (default: preserve)",
+    )
+    parser.add_argument(
         "--end-of-line",
         choices=("lf", "crlf", "keep"),
         help="output file line ending mode (default: lf)",

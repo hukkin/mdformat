@@ -32,7 +32,9 @@ def text(
     # Preserve frontmatter verbatim -- keep it out of the AST entirely.
     # Without this (or the mdformat-frontmatter plugin), frontmatter
     # delimiters are treated as horizontal rules and content is corrupted.
-    frontmatter, md = strip_frontmatter(md)
+    frontmatter = ""
+    if options.get("frontmatter", DEFAULT_OPTS["frontmatter"]) == "preserve":
+        frontmatter, md = strip_frontmatter(md)
 
     with _first_pass_contextmanager:
         mdit = build_mdit(

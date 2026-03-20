@@ -11,6 +11,7 @@ from mdformat._util import EMPTY_MAP
 DEFAULT_OPTS = MappingProxyType(
     {
         "wrap": "keep",
+        "frontmatter": "preserve",
         "number": False,
         "end_of_line": "lf",
         "validate": True,
@@ -61,6 +62,9 @@ def _validate_values(opts: Mapping, conf_path: Path) -> None:  # noqa: C901
             or wrap_value in {"keep", "no"}
         ):
             raise InvalidConfError(f"Invalid 'wrap' value in {conf_path}")
+    if "frontmatter" in opts:
+        if opts["frontmatter"] not in {"preserve", "no"}:
+            raise InvalidConfError(f"Invalid 'frontmatter' value in {conf_path}")
     if "end_of_line" in opts:
         if opts["end_of_line"] not in {"crlf", "lf", "keep"}:
             raise InvalidConfError(f"Invalid 'end_of_line' value in {conf_path}")
