@@ -7,7 +7,13 @@ from pathlib import Path
 from typing import Any
 
 from mdformat._conf import DEFAULT_OPTS
-from mdformat._util import EMPTY_MAP, NULL_CTX, build_mdit, detect_newline_type
+from mdformat._util import (
+    EMPTY_MAP,
+    NULL_CTX,
+    build_mdit,
+    detect_newline_type,
+    strip_frontmatter,
+)
 
 
 def text(
@@ -22,6 +28,11 @@ def text(
     """Format a Markdown string."""
     # Lazy import to improve module import time
     from mdformat.renderer import MDRenderer
+
+    # Preserve frontmatter verbatim -- keep it out of the AST entirely.
+    # Without this (or the mdformat-frontmatter plugin), frontmatter
+    # delimiters are treated as horizontal rules and content is corrupted.
+    frontmatter, md = strip_frontmatter(md)
 
     with _first_pass_contextmanager:
         mdit = build_mdit(
@@ -39,7 +50,7 @@ def text(
     if options.get("wrap", DEFAULT_OPTS["wrap"]) != "keep":
         rendering = mdit.render(rendering)
 
-    return rendering
+    return frontmatter + rendering
 
 
 def file(

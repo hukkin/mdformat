@@ -14,6 +14,21 @@ if TYPE_CHECKING:
 NULL_CTX = nullcontext()
 EMPTY_MAP: MappingProxyType = MappingProxyType({})
 
+_FRONTMATTER_RE = re.compile(r"\A(---[ \t]*\n.*?\n---[ \t]*\n)", re.DOTALL)
+
+
+def strip_frontmatter(md: str) -> tuple[str, str]:
+    """Strip YAML frontmatter from the start of a markdown string.
+
+    Returns (frontmatter, body) where frontmatter includes the ``---``
+    delimiters and trailing newline, or is empty if none was found.
+    """
+    m = _FRONTMATTER_RE.match(md)
+    if m:
+        return m.group(1), md[m.end() :]
+    return "", md
+
+
 RE_NEWLINES = re.compile(r"\r\n|\r|\n")
 RE_HTML_START_SPACE_PREFIX = re.compile(r" (<[a-zA-Z][-a-zA-Z0-9]*>)")
 RE_HTML_END_SPACE_SUFFIX = re.compile(r"(</[a-zA-Z][-a-zA-Z0-9]*>) ")
