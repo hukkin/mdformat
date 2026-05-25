@@ -330,6 +330,7 @@ class InvalidPath(Exception):
     """Exception raised when a path does not exist."""
 
     def __init__(self, path: Path):
+        super().__init__(path)
         self.path = path
 
 
