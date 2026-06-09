@@ -65,7 +65,10 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
                 opts["plugin"][plugin_id] = plugin_opts
 
         if sys.version_info >= (3, 13):  # pragma: >=3.13 cover
-            if is_excluded(path, opts["exclude"], toml_path, "exclude" in cli_opts):
+            # TOML patterns are rooted at the config dir, CLI patterns at cwd.
+            toml_excludes = toml_opts.get("exclude", ())
+            cli_excludes = cli_core_opts.get("exclude", ())
+            if is_excluded(path, toml_excludes, cli_excludes, toml_path):
                 continue
         else:  # pragma: <3.13 cover
             if "exclude" in toml_opts:
@@ -327,6 +330,7 @@ class InvalidPath(Exception):
     """Exception raised when a path does not exist."""
 
     def __init__(self, path: Path):
+        super().__init__(path)
         self.path = path
 
 
@@ -358,23 +362,28 @@ def resolve_file_paths(path_strings: Iterable[str]) -> list[None | Path]:
 
 def is_excluded(  # pragma: >=3.13 cover
     path: Path | None,
-    patterns: list[str],
+    toml_patterns: Iterable[str],
+    cli_patterns: Iterable[str],
     toml_path: Path | None,
-    excludes_from_cli: bool,
 ) -> bool:
     if not path:
         return False
 
-    if not excludes_from_cli and toml_path:
-        exclude_root = toml_path.parent
-    else:
-        exclude_root = Path.cwd()
+    toml_root = toml_path.parent if toml_path else None
+    if _matches_patterns(path, toml_patterns, toml_root):
+        return True
+    return _matches_patterns(path, cli_patterns, Path.cwd())
 
+
+def _matches_patterns(  # pragma: >=3.13 cover
+    path: Path, patterns: Iterable[str], root: Path | None
+) -> bool:
+    if root is None:
+        return False
     try:
-        relative_path = path.relative_to(exclude_root)
+        relative_path = path.relative_to(root)
     except ValueError:
         return False
-
     return any(relative_path.full_match(pattern) for pattern in patterns)
 
 

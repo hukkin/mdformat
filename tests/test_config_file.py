@@ -140,6 +140,27 @@ def test_exclude(tmp_path, capsys):
 @pytest.mark.skipif(
     sys.version_info < (3, 13), reason="'exclude' only possible on 3.13+"
 )
+def test_exclude_cli_and_toml_merge(tmp_path):
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text("exclude = ['file1.md']")
+
+    file1_path = tmp_path / "file1.md"
+    file2_path = tmp_path / "file2.md"
+    file3_path = tmp_path / "file3.md"
+    file1_path.write_text(UNFORMATTED_MARKDOWN)
+    file2_path.write_text(UNFORMATTED_MARKDOWN)
+    file3_path.write_text(UNFORMATTED_MARKDOWN)
+
+    with mock.patch("mdformat._cli.Path.cwd", return_value=tmp_path):
+        assert run((str(tmp_path), "--exclude", "file2.md")) == 0
+    assert file1_path.read_text() == UNFORMATTED_MARKDOWN
+    assert file2_path.read_text() == UNFORMATTED_MARKDOWN
+    assert file3_path.read_text() == FORMATTED_MARKDOWN
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 13), reason="'exclude' only possible on 3.13+"
+)
 def test_empty_exclude(tmp_path, capsys):
     config_path = tmp_path / ".mdformat.toml"
     config_path.write_text("exclude = []")

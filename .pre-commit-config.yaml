@@ -34,6 +34,8 @@ repos:
   rev: ab802050e6e96aaaf7f917fcbc333bb74e2e57f7  # frozen: v1.4.2
   hooks:
   - id: docformatter
+    # v1.4.2 setup.py breaks on Python 3.14 (removed ast.Constant.s alias)
+    language_version: python3.13
 - repo: https://github.com/PyCQA/flake8
   rev: d93590f5be797aabb60e3b09f2f52dddb02f349f  # frozen: 7.3.0
   hooks:
