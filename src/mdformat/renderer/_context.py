@@ -310,8 +310,11 @@ def heading(node: RenderTreeNode, context: RenderContext) -> str:
         prefix = node.markup + " "
 
     # There can be newlines in setext headers, but we make an ATX
-    # header always. Convert newlines to spaces.
-    text = text.replace("\n", " ")
+    # header always. Convert newlines to spaces. A line of a setext
+    # header can end in a tab that the parser preserves in the text
+    # token, so collapse any consecutive spaces this leaves behind to
+    # keep the output stable when formatted again.
+    text = re.sub(" *\n *", " ", text)
 
     # If the text ends in a sequence of hashes (#), the hashes will be
     # interpreted as an optional closing sequence of the heading, and

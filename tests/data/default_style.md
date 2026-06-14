@@ -58,6 +58,15 @@ Top level heading
 ## 2nd level heading
 .
 
+setext heading line ending in a tab
+.
+first	
+second
+---
+.
+## first second
+.
+
 Lists with different bullets
 .
 - a
