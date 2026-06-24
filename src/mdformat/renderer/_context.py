@@ -326,7 +326,7 @@ def blockquote(node: RenderTreeNode, context: RenderContext) -> str:
     marker = "> "
     with context.indented(len(marker)):
         text = make_render_children(separator="\n\n")(node, context)
-        lines = text.splitlines()
+        lines = text.split("\n")
         if not lines:
             return ">"
         quoted_lines = (f"{marker}{line}" if line else ">" for line in lines)
