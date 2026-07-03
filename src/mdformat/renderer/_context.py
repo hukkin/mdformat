@@ -111,6 +111,17 @@ def softbreak(node: RenderTreeNode, context: RenderContext) -> str:
     return "\n"
 
 
+def inline(node: RenderTreeNode, context: RenderContext) -> str:
+    # A "_" emphasis marker is a literal underscore in the output that a relaxed
+    # underscore elsewhere in the inline could pair with. Detect them once here
+    # so text escaping can stay conservative for the whole inline when present.
+    context.env["within_underscore_emphasis"] = any(
+        child.type in ("em", "strong") and set(child.markup) == {"_"}
+        for child in node.walk()
+    )
+    return "".join(out for out in (c.render(context) for c in node.children) if out)
+
+
 def text(node: RenderTreeNode, context: RenderContext) -> str:
     """Process a text token.
 
@@ -129,7 +140,9 @@ def text(node: RenderTreeNode, context: RenderContext) -> str:
     text = text.replace("\\", "\\\\")
 
     text = escape_asterisk_emphasis(text)  # Escape emphasis/strong marker.
-    text = escape_underscore_emphasis(text)  # Escape emphasis/strong marker.
+    text = escape_underscore_emphasis(  # Escape emphasis/strong marker.
+        text, escape_openers=context.env["within_underscore_emphasis"]
+    )
     # Escape link label and link ref enclosures
     text = escape_square_brackets(text, context.env["used_refs"])
     text = escape_less_than_sign(text)  # Escape URI enclosure and HTML.
@@ -596,7 +609,7 @@ def ordered_list(node: RenderTreeNode, context: RenderContext) -> str:
 
 DEFAULT_RENDERERS: Mapping[str, Render] = MappingProxyType(
     {
-        "inline": make_render_children(""),
+        "inline": inline,
         "root": make_render_children("\n\n"),
         "hr": hr,
         "code_inline": code_inline,

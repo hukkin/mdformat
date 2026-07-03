@@ -311,11 +311,31 @@ Don't esc_ape
 
 Don't _ escape _ underscore
 .
-Do \_escape
+Do _escape
 
 Don't esc_ape
 
 Don't _ escape _ underscore
+.
+
+
+Don't escape underscores that can't close emphasis
+.
+When using *target=_blank* the underscore is literal.
+
+As a ______, I want X.
+
+Set target=_blank or read foo._bar here.
+
+Keep _a \_b c_ escaped inside emphasis.
+.
+When using *target=_blank* the underscore is literal.
+
+As a ______, I want X.
+
+Set target=_blank or read foo._bar here.
+
+Keep _a \_b c_ escaped inside emphasis.
 .
 
 
