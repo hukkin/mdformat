@@ -134,41 +134,59 @@ def escape_asterisk_emphasis(text: str) -> str:
     return escaped_text
 
 
-def escape_underscore_emphasis(text: str) -> str:
-    """Escape underscores to prevent unexpected emphasis/strong emphasis.
-    Currently we escape all underscores unless:
+def escape_underscore_emphasis(text: str, *, escape_openers: bool = False) -> str:
+    """Escape underscores that could be interpreted as emphasis/strong
+    emphasis.
 
-    - Neither of the surrounding characters are one of Unicode whitespace,
-      start or end of line, or Unicode punctuation
-    - Both surrounding characters are Unicode whitespace
+    Emphasis needs both an opening and a closing delimiter, so escaping every
+    underscore run that can *close* emphasis is enough to keep all underscores
+    literal. Per CommonMark section 6.2 an underscore run can close emphasis
+    only when it is preceded by a non-whitespace character and not followed by
+    a word character (and can open emphasis in the mirror case). Runs that can
+    neither open nor close emphasis, e.g. intraword underscores, stay literal.
+
+    The characters bordering this text (the start and end of the string) belong
+    to sibling nodes we cannot see here, so a run touching either end is escaped
+    regardless. When the text is wrapped by ``_`` emphasis markers those markers
+    can themselves pair with an inner run, so ``escape_openers`` additionally
+    escapes runs that can only open, keeping the wrapped text intact.
     """
     # Fast exit to improve performance
     if "_" not in text:
         return text
 
-    bad_neighbor_chars = (
-        codepoints.UNICODE_WHITESPACE
-        | codepoints.UNICODE_PUNCTUATION
-        | frozenset({None})
-    )
+    non_word_chars = codepoints.UNICODE_WHITESPACE | codepoints.UNICODE_PUNCTUATION
     escaped_text = ""
 
     text_length = len(text)
-    for i, current_char in enumerate(text):
+    i = 0
+    while i < text_length:
+        current_char = text[i]
         if current_char != "_":
             escaped_text += current_char
+            i += 1
             continue
-        prev_char = text[i - 1] if (i - 1) >= 0 else None
-        next_char = text[i + 1] if (i + 1) < text_length else None
-        if (
-            prev_char in codepoints.UNICODE_WHITESPACE
-            and next_char in codepoints.UNICODE_WHITESPACE
-        ) or (
-            prev_char not in bad_neighbor_chars and next_char not in bad_neighbor_chars
-        ):
-            escaped_text += current_char
-            continue
-        escaped_text += "\\" + current_char
+        run_start = i
+        while i < text_length and text[i] == "_":
+            i += 1
+        prev_char = text[run_start - 1] if run_start else None
+        next_char = text[i] if i < text_length else None
+        left_nonspace = (
+            prev_char is not None and prev_char not in codepoints.UNICODE_WHITESPACE
+        )
+        right_nonspace = (
+            next_char is not None and next_char not in codepoints.UNICODE_WHITESPACE
+        )
+        left_word = prev_char is not None and prev_char not in non_word_chars
+        right_word = next_char is not None and next_char not in non_word_chars
+        can_close = left_nonspace and not right_word
+        can_open = right_nonspace and not left_word
+        at_border = prev_char is None or next_char is None
+        escape = at_border or can_close or (escape_openers and can_open)
+        if escape:
+            escaped_text += "\\_" * (i - run_start)
+        else:
+            escaped_text += text[run_start:i]
 
     return escaped_text
 

@@ -125,3 +125,4 @@ class MDRenderer:
     def _prepare_env(self, env: MutableMapping) -> None:
         env["indent_width"] = 0
         env["used_refs"] = set()
+        env["within_underscore_emphasis"] = False
