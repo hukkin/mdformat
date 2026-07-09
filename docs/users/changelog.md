@@ -18,6 +18,9 @@ Note that there is currently no guarantee for a stable Markdown formatting style
 - Fixed
   - Read UTF-8 from standard input on all systems.
     Thank you, [Christopher Prohm](https://github.com/chmp), for the PR.
+  - No longer error on emphasis whose content is a whitespace character
+    reference (e.g. `*&#32;*`). The boundary whitespace is now kept in
+    character reference form so the emphasis markers remain functional.
 
 ## 0.7.22
 

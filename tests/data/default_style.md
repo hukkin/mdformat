@@ -530,3 +530,17 @@ Reduce to a space	 	here.
 
 Reduce to a space here.
 .
+
+emphasis around whitespace character reference (issue 492)
+.
+*&#32;*
+.
+*&#32;*
+.
+
+strong emphasis around named whitespace character reference
+.
+**&nbsp;**
+.
+**&#160;**
+.
