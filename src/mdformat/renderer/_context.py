@@ -289,12 +289,22 @@ def link(node: RenderTreeNode, context: RenderContext) -> str:
 
 def em(node: RenderTreeNode, context: RenderContext) -> str:
     text = make_render_children(separator="")(node, context)
+    # Emphasis can not begin or end in Unicode whitespace, so if it does
+    # (e.g. the whitespace came from a character reference like `&#32;`),
+    # re-decimalify the boundary whitespace to keep the markers functional.
+    text = decimalify_leading(codepoints.UNICODE_WHITESPACE, text)
+    text = decimalify_trailing(codepoints.UNICODE_WHITESPACE, text)
     indicator = node.markup
     return indicator + text + indicator
 
 
 def strong(node: RenderTreeNode, context: RenderContext) -> str:
     text = make_render_children(separator="")(node, context)
+    # Emphasis can not begin or end in Unicode whitespace, so if it does
+    # (e.g. the whitespace came from a character reference like `&#32;`),
+    # re-decimalify the boundary whitespace to keep the markers functional.
+    text = decimalify_leading(codepoints.UNICODE_WHITESPACE, text)
+    text = decimalify_trailing(codepoints.UNICODE_WHITESPACE, text)
     indicator = node.markup
     return indicator + text + indicator
 
