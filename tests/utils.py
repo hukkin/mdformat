@@ -12,6 +12,11 @@ UNFORMATTED_MARKDOWN = "\n\n# A header\n\n"
 FORMATTED_MARKDOWN = "# A header\n"
 
 
+def nested_list_markdown(depth: int) -> str:
+    """A bulleted list nested `depth` levels deep."""
+    return "".join(f"{'  ' * i}- item{i}\n" for i in range(depth))
+
+
 class JSONFormatterPlugin:
     """A code formatter plugin that formats JSON."""
 

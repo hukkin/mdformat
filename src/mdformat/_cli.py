@@ -13,7 +13,7 @@ import textwrap
 
 import mdformat
 from mdformat._conf import DEFAULT_OPTS, InvalidConfError, read_toml_opts
-from mdformat._util import detect_newline_type, is_md_equal
+from mdformat._util import detect_newline_type, is_md_equal, required_nesting_depth
 import mdformat.plugins
 
 
@@ -21,6 +21,39 @@ class RendererWarningPrinter(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         if record.levelno >= logging.WARNING:  # pragma: no branch
             sys.stderr.write(f"Warning: {record.msg}\n")
+
+
+def _print_max_nesting_error(
+    path_str: str,
+    original_str: str,
+    *,
+    opts: Mapping,
+    extensions: Mapping,
+    codeformatters: Mapping,
+) -> bool:
+    """Print error and return `True` if `max_nesting` caused the mismatch."""
+    configured_max_nesting = opts["max_nesting"]
+    needed_depth = required_nesting_depth(
+        original_str,
+        options=opts,
+        extensions=extensions,
+        codeformatters=codeformatters,
+    )
+    if needed_depth is None or needed_depth <= configured_max_nesting:
+        return False
+    print_error(
+        f'Could not format "{path_str}".',
+        paragraphs=[
+            f"This document nests blockquotes and/or lists {needed_depth} "
+            "levels deep, but 'max_nesting' is set to "
+            f"{configured_max_nesting}. Content nested beyond that "
+            "limit is silently dropped by the parser, "
+            "which is why formatting changed the document's meaning. "
+            f"Raise the limit, e.g. `--max-nesting={needed_depth}` "
+            "or `max_nesting` in `.mdformat.toml`.",
+        ],
+    )
+    return True
 
 
 def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
@@ -162,6 +195,14 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
                     codeformatters=enabled_codeformatters,
                 )
             ):
+                if _print_max_nesting_error(
+                    path_str,
+                    original_str,
+                    opts=opts,
+                    extensions=enabled_parserplugins,
+                    codeformatters=enabled_codeformatters,
+                ):
+                    return 1
                 print_error(
                     f'Could not format "{path_str}".',
                     paragraphs=[
@@ -193,6 +234,13 @@ def validate_wrap_arg(value: str) -> str | int:
     if width < 1:
         raise ValueError("wrap width must be a positive integer")
     return width
+
+
+def validate_max_nesting_arg(value: str) -> int:
+    max_nesting = int(value)
+    if max_nesting < 1:
+        raise ValueError("max-nesting must be a positive integer")
+    return max_nesting
 
 
 def make_arg_parser(
@@ -240,6 +288,14 @@ def make_arg_parser(
         "--end-of-line",
         choices=("lf", "crlf", "keep"),
         help="output file line ending mode (default: lf)",
+    )
+    parser.add_argument(
+        "--max-nesting",
+        type=validate_max_nesting_arg,
+        metavar="INTEGER",
+        help="maximum allowed nesting depth of blockquotes and lists "
+        "(default: 20). Content nested deeper than this is silently "
+        "dropped by the parser; raise this for deeply nested documents",
     )
     if sys.version_info >= (3, 13):  # pragma: >=3.13 cover
         parser.add_argument(
@@ -327,6 +383,7 @@ class InvalidPath(Exception):
     """Exception raised when a path does not exist."""
 
     def __init__(self, path: Path):
+        super().__init__(path)
         self.path = path
 
 

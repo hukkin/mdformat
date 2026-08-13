@@ -4,7 +4,19 @@ from unittest import mock
 import pytest
 
 from mdformat._cli import run
-from tests.utils import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN
+from tests.utils import FORMATTED_MARKDOWN, UNFORMATTED_MARKDOWN, nested_list_markdown
+
+
+def test_max_nesting_conf(tmp_path):
+    config_path = tmp_path / ".mdformat.toml"
+    config_path.write_text("max_nesting = 500")
+
+    file_path = tmp_path / "test_markdown.md"
+    text = nested_list_markdown(100)
+    file_path.write_text(text)
+
+    assert run((str(file_path),)) == 0
+    assert file_path.read_text() == text
 
 
 def test_cli_override(tmp_path):
@@ -73,6 +85,8 @@ def test_invalid_toml(tmp_path, capsys):
         ("extensions", "extensions = 'gfm'"),
         ("codeformatters", "codeformatters = ['python', 1]"),
         ("extensions", "extensions = ['gfm', 1]"),
+        ("max_nesting", "max_nesting = 0"),
+        ("max_nesting", "max_nesting = 'deep'"),
     ],
 )
 def test_invalid_conf_value(bad_conf, conf_key, tmp_path, capsys):

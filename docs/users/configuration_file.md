@@ -21,6 +21,7 @@ wrap = "keep"         # options: {"keep", "no", INTEGER}
 number = false        # options: {false, true}
 end_of_line = "lf"    # options: {"lf", "crlf", "keep"}
 validate = true       # options: {false, true}
+max_nesting = 20      # options: a positive integer
 # extensions = [      # options: a list of enabled extensions (default: all installed are enabled)
 #     "gfm",
 #     "toc",

@@ -12,6 +12,7 @@ from tests.utils import (
     UNFORMATTED_MARKDOWN,
     ASTChangingPlugin,
     PrefixPostprocessPlugin,
+    nested_list_markdown,
 )
 
 
@@ -269,6 +270,38 @@ def test_bad_wrap_width(capsys):
     assert "error: argument --wrap" in captured.err
 
 
+def test_max_nesting(tmp_path):
+    file_path = tmp_path / "test.md"
+    text = nested_list_markdown(100)
+    file_path.write_text(text)
+
+    assert run([str(file_path), "--max-nesting=500"]) == 0
+    assert file_path.read_text() == text
+
+
+def test_max_nesting__too_low(tmp_path, capsys):
+    file_path = tmp_path / "test.md"
+    text = nested_list_markdown(100)
+    file_path.write_text(text)
+
+    assert run([str(file_path)]) == 1
+    assert file_path.read_text() == text
+    captured = capsys.readouterr()
+    err = " ".join(captured.err.split())
+    assert "nests blockquotes and/or lists" in err
+    assert "'max_nesting' is set to 20" in err
+    assert "--max-nesting=" in err
+
+
+def test_bad_max_nesting(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        run(["some-path.md", "--max-nesting=0"])
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "error: argument --max-nesting" in captured.err
+
+
 def test_eol__lf(tmp_path):
     file_path = tmp_path / "test.md"
     file_path.write_bytes(b"Oi\r\n")
@@ -362,15 +395,12 @@ def test_get_plugin_info_str():
         {"mdformat-tables": ("0.1.0", ["tables"])},
         {"mdformat-black": ("12.1.0", ["python"])},
     )
-    assert (
-        info
-        == """\
+    assert info == """\
 installed codeformatters:
   mdformat-black: python
 
 installed extensions:
   mdformat-tables: tables"""
-    )
 
 
 def test_no_timestamp_modify(tmp_path):

@@ -80,8 +80,8 @@ If a file is not properly formatted, the exit code will be non-zero.
 foo@bar:~$ mdformat --help
 usage: mdformat [-h] [--check] [--no-validate] [--version] [--number]
                 [--wrap {keep,no,INTEGER}] [--end-of-line {lf,crlf,keep}]
-                [--exclude PATTERN] [--extensions EXTENSION]
-                [--codeformatters LANGUAGE]
+                [--max-nesting INTEGER] [--exclude PATTERN]
+                [--extensions EXTENSION] [--codeformatters LANGUAGE]
                 [paths ...]
 
 CommonMark compliant Markdown formatter
@@ -99,6 +99,11 @@ options:
                         paragraph word wrap mode (default: keep)
   --end-of-line {lf,crlf,keep}
                         output file line ending mode (default: lf)
+  --max-nesting INTEGER
+                        maximum allowed nesting depth of blockquotes and lists
+                        (default: 20). Content nested deeper than this is
+                        silently dropped by the parser; raise this for deeply
+                        nested documents
   --exclude PATTERN     exclude files that match the Unix-style glob pattern
                         (multiple allowed)
   --extensions EXTENSION
