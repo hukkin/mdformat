@@ -6,6 +6,7 @@ import pytest
 import mdformat
 from mdformat._util import is_md_equal
 from mdformat.renderer import MDRenderer
+from tests.utils import nested_list_markdown
 
 UNFORMATTED_MARKDOWN = "\n\n# A header\n\n"
 FORMATTED_MARKDOWN = "# A header\n"
@@ -88,6 +89,16 @@ def test_api_options():
 2. c
 """
     assert mdformat.text(non_numbered, options={"number": True}) == numbered
+
+
+def test_max_nesting__deeply_nested_list():
+    text = nested_list_markdown(100)
+    assert mdformat.text(text, options={"max_nesting": 500}) == text
+
+
+def test_max_nesting__default_truncates_deeply_nested_list():
+    text = nested_list_markdown(100)
+    assert mdformat.text(text) != text
 
 
 def test_eol__lf(tmp_path):

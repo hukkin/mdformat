@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 NULL_CTX = nullcontext()
 EMPTY_MAP: MappingProxyType = MappingProxyType({})
+DEFAULT_MAX_NESTING = 20
 
 RE_NEWLINES = re.compile(r"\r\n|\r|\n")
 RE_HTML_START_SPACE_PREFIX = re.compile(r" (<[a-zA-Z][-a-zA-Z0-9]*>)")
@@ -31,6 +32,7 @@ def build_mdit(
 
     mdit = MarkdownIt(renderer_cls=renderer_cls)
     mdit.options["mdformat"] = mdformat_opts
+    mdit.options["maxNesting"] = mdformat_opts.get("max_nesting", DEFAULT_MAX_NESTING)
     # store reference labels in link/image tokens
     mdit.options["store_labels"] = True
 
@@ -115,6 +117,32 @@ def is_md_equal(
         html_texts[key] = html
 
     return html_texts["md1"] == html_texts["md2"]
+
+
+def required_nesting_depth(
+    md: str,
+    *,
+    options: Mapping[str, Any] = EMPTY_MAP,
+    extensions: Iterable[str] = (),
+    codeformatters: Iterable[str] = (),
+) -> int | None:
+    """Return how many levels of blockquote/list nesting is required."""
+    # Lazy import to improve module import time
+    from markdown_it.renderer import RendererHTML
+
+    nesting_probe_ceiling = 500  # Below default Python recursion limit
+    probe_opts = {**options, "max_nesting": nesting_probe_ceiling}
+    try:
+        mdit = build_mdit(
+            RendererHTML,
+            mdformat_opts=probe_opts,
+            extensions=extensions,
+            codeformatters=codeformatters,
+        )
+        tokens = mdit.parse(md)
+    except RecursionError:
+        return None
+    return max((token.level for token in tokens), default=-1) + 1
 
 
 def detect_newline_type(md: str, eol_setting: str) -> Literal["\n", "\r\n"]:

@@ -6,7 +6,7 @@ from pathlib import Path
 from types import MappingProxyType
 
 from mdformat._compat import tomllib
-from mdformat._util import EMPTY_MAP
+from mdformat._util import DEFAULT_MAX_NESTING, EMPTY_MAP
 
 DEFAULT_OPTS = MappingProxyType(
     {
@@ -18,6 +18,7 @@ DEFAULT_OPTS = MappingProxyType(
         "plugin": EMPTY_MAP,
         "extensions": None,
         "codeformatters": None,
+        "max_nesting": DEFAULT_MAX_NESTING,
     }
 )
 
@@ -94,6 +95,14 @@ def _validate_values(opts: Mapping, conf_path: Path) -> None:  # noqa: C901
         for lang in opts["codeformatters"]:
             if not isinstance(lang, str):
                 raise InvalidConfError(f"Invalid 'codeformatters' value in {conf_path}")
+    if "max_nesting" in opts:
+        max_nesting_value = opts["max_nesting"]
+        if not (
+            isinstance(max_nesting_value, int)
+            and not isinstance(max_nesting_value, bool)
+            and max_nesting_value > 0
+        ):
+            raise InvalidConfError(f"Invalid 'max_nesting' value in {conf_path}")
 
 
 def _validate_keys(opts: Mapping, conf_path: Path) -> None:
