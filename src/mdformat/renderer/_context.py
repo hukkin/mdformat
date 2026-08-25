@@ -218,6 +218,8 @@ def image(node: RenderTreeNode, context: RenderContext) -> str:
     uri = maybe_add_link_brackets(uri)
     title = node.attrs.get("title")
     if title is not None:
+        assert isinstance(title, str)
+        title = title.replace('"', '\\"')
         return f'![{description}]({uri} "{title}")'
     return f"![{description}]({uri})"
 
