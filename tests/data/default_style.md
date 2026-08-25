@@ -130,6 +130,17 @@ references:
 [ref2]: link3 "title"
 .
 
+link and image titles with embedded quotes
+.
+[text](link1 "a \"quoted\" title")
+
+![text](img.png "a \"quoted\" title")
+.
+[text](link1 "a \"quoted\" title")
+
+![text](img.png "a \"quoted\" title")
+.
+
 thematic breaks
 .
 something something
