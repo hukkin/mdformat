@@ -459,6 +459,11 @@ def paragraph(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: C90
         elif all(c == "=" for c in stripped):
             lines[i] = lines[i].replace("=", "\\=", 1)
 
+        # Make sure a paragraph line does not start with three or more
+        # tildes (otherwise it will be interpreted as a fenced code block).
+        if re.match(r"~{3,}", lines[i]):
+            lines[i] = f"\\{lines[i]}"
+
         # Check if the line could be interpreted as an HTML block.
         # If yes, prefix it with 4 spaces to prevent this.
         for html_seq_tuple in HTML_SEQUENCES:
