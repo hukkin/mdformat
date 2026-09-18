@@ -326,7 +326,8 @@ def separate_core_and_plugin_opts(opts: Mapping) -> tuple[dict, dict]:
 class InvalidPath(Exception):
     """Exception raised when a path does not exist."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path) -> None:
+        super().__init__(path)
         self.path = path
 
 

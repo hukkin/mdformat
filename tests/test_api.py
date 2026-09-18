@@ -46,6 +46,21 @@ def test_fmt_string():
     assert mdformat.text(UNFORMATTED_MARKDOWN) == FORMATTED_MARKDOWN
 
 
+@pytest.mark.parametrize("whitespace", ["\u00a0", "\u2003", "\u202f"])
+@pytest.mark.parametrize("leading", [False, True])
+def test_wrap_preserves_unicode_whitespace_at_line_edges(whitespace, leading):
+    if leading:
+        source = f"alpha {whitespace}beta\n"
+        expected = f"alpha\n{whitespace}beta\n"
+    else:
+        source = f"alpha{whitespace} beta\n"
+        expected = f"alpha{whitespace}\nbeta\n"
+
+    output = mdformat.text(source, options={"wrap": 10})
+    assert output == expected
+    assert mdformat.text(output, options={"wrap": 10}) == output
+
+
 @pytest.mark.parametrize(
     "input_",
     [
