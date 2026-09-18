@@ -1,11 +1,12 @@
 import os
+import pickle
 import sys
 from unittest.mock import patch
 
 import pytest
 
 import mdformat
-from mdformat._cli import get_plugin_info_str, run, wrap_paragraphs
+from mdformat._cli import InvalidPath, get_plugin_info_str, run, wrap_paragraphs
 from mdformat.plugins import CODEFORMATTERS, PARSER_EXTENSIONS
 from tests.utils import (
     FORMATTED_MARKDOWN,
@@ -90,6 +91,22 @@ def test_invalid_file(capsys):
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
     assert "does not exist" in captured.err
+
+
+@pytest.mark.parametrize("use_keyword", [False, True])
+def test_invalid_path_exception(tmp_path, use_keyword):
+    path = tmp_path / "missing.md"
+    error = InvalidPath(path=path) if use_keyword else InvalidPath(path)
+
+    assert error.path == path
+    assert error.args == (path,)
+    assert str(error) == str(path)
+
+    restored = pickle.loads(pickle.dumps(error))
+    assert isinstance(restored, InvalidPath)
+    assert restored.path == path
+    assert restored.args == error.args
+    assert str(restored) == str(error)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="No os.mkfifo on windows")
