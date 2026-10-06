@@ -133,6 +133,50 @@ If using Poetry or Flit for packaging, the entry point configuration in `pyproje
 "myextension" = "my_package:ext_module_or_class"
 ```
 
+### Rendering indented content
+
+Renderer functions receive a `RenderContext` from `mdformat.renderer`.
+When a renderer adds a prefix or indentation to its children's output,
+use `with context.indented(width):` while rendering those children.
+The integer `width` is the number of characters the renderer will add to each line.
+For example, a blockquote's `"> "` prefix takes two characters.
+This lets paragraph rendering account for the prefix when a numeric `--wrap` width is set.
+
+`context.indented(width)` temporarily adds `width` to `context.env["indent_width"]`.
+Nested uses add their widths together,
+and each context manager removes its contribution on exit, even if rendering raises an exception.
+The method does not add spaces or prefixes to the rendered text:
+the renderer must add them itself.
+
+For example, a parser extension can provide this blockquote renderer:
+
+```python
+from mdformat.renderer import RenderContext, RenderTreeNode
+
+
+def render_blockquote(node: RenderTreeNode, context: RenderContext) -> str:
+    prefix = "> "
+    with context.indented(len(prefix)):
+        text = "\n\n".join(child.render(context) for child in node.children)
+    return "\n".join(prefix + line if line else ">" for line in text.splitlines()) or ">"
+
+
+RENDERERS = {"blockquote": render_blockquote}
+```
+
+With a wrap width of 12, a paragraph containing `one two three four`
+inside a blockquote is rendered as:
+
+```markdown
+> one two
+> three four
+```
+
+The children are rendered with two fewer characters available per line,
+then the renderer adds the `"> "` prefix.
+If the blockquote is itself inside another indented block,
+the available width also accounts for that outer indentation.
+
 ## Making your plugin discoverable
 
 In case you host your plugin on GitHub, make sure to add it under the "mdformat" topic so it shows up on <https://github.com/topics/mdformat>.
