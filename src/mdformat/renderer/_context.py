@@ -232,6 +232,10 @@ def _render_inline_as_text(node: RenderTreeNode, context: RenderContext) -> str:
     def text_renderer(node: RenderTreeNode, context: RenderContext) -> str:
         return node.content
 
+    def text_special_renderer(node: RenderTreeNode, context: RenderContext) -> str:
+        # Keep the source escape/entity so literal Markdown delimiters stay literal.
+        return node.markup
+
     def image_renderer(node: RenderTreeNode, context: RenderContext) -> str:
         return _render_inline_as_text(node, context)
 
@@ -239,6 +243,7 @@ def _render_inline_as_text(node: RenderTreeNode, context: RenderContext) -> str:
         lambda: make_render_children(""),
         {
             "text": text_renderer,
+            "text_special": text_special_renderer,
             "image": image_renderer,
             "link": link,
             "softbreak": softbreak,
