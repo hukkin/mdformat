@@ -283,7 +283,7 @@ def link(node: RenderTreeNode, context: RenderContext) -> str:
     if title is None:
         return f"[{text}]({uri})"
     assert isinstance(title, str)
-    title = title.replace('"', '\\"')
+    title = title.replace("\\", "\\\\").replace('"', '\\"')
     return f'[{text}]({uri} "{title}")'
 
 
