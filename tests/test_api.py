@@ -4,6 +4,7 @@ from markdown_it import MarkdownIt
 import pytest
 
 import mdformat
+from mdformat._cli import run
 from mdformat._util import is_md_equal
 from mdformat.renderer import MDRenderer
 
@@ -44,6 +45,31 @@ def test_fmt_file__symlink(tmp_path):
 
 def test_fmt_string():
     assert mdformat.text(UNFORMATTED_MARKDOWN) == FORMATTED_MARKDOWN
+
+
+@pytest.mark.parametrize("wrap", ["keep", "no", 60])
+@pytest.mark.parametrize("reference", [False, True], ids=["inline", "reference"])
+@pytest.mark.parametrize(
+    "title",
+    [r"a\*b", "a\\", r"a\"b", r"C:\Users\docs"],
+    ids=["escaped-punctuation", "trailing-backslash", "backslash-quote", "path"],
+)
+def test_link_title_backslashes(title, reference, wrap, tmp_path):
+    escaped_title = title.replace("\\", "\\\\").replace('"', '\\"')
+    if reference:
+        source = f'[x]\n\n[x]: /url "{escaped_title}"\n'
+    else:
+        source = f'[x](/url "{escaped_title}")\n'
+    options = {"wrap": wrap}
+
+    output = mdformat.text(source, options=options)
+    assert MarkdownIt().render(output) == MarkdownIt().render(source)
+    assert mdformat.text(output, options=options) == output
+
+    file_path = tmp_path / "title.md"
+    file_path.write_bytes(source.encode())
+    assert run([str(file_path), "--wrap", str(wrap)]) == 0
+    assert file_path.read_bytes().decode() == output
 
 
 @pytest.mark.parametrize(

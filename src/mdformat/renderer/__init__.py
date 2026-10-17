@@ -117,7 +117,7 @@ class MDRenderer:
             item = f"[{label.lower()}]: {destination}"
             title = ref["title"]
             if title:
-                title = title.replace('"', '\\"')
+                title = title.replace("\\", "\\\\").replace('"', '\\"')
                 item += f' "{title}"'
             ref_list.append(item)
         return "\n".join(ref_list)
