@@ -114,6 +114,20 @@ def test_check__fail(tmp_path):
     assert run((str(file_path), "--check")) == 1
 
 
+def test_check__after_format_with_small_wrap(tmp_path):
+    """A file just formatted must pass --check.
+
+    Escaping can depend on where word wrapping split a paragraph, so a
+    single render pass may produce text that a second pass formats
+    differently. That made --check fail on a file mdformat had itself
+    just written.
+    """
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_text("A * * b\n")
+    assert run((str(file_path), "--wrap", "5")) == 0
+    assert run((str(file_path), "--check", "--wrap", "5")) == 0
+
+
 def test_check__multi_fail(capsys, tmp_path):
     """Test for --check flag when multiple files are unformatted.
 

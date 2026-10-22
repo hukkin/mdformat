@@ -32,12 +32,17 @@ def text(
         )
         rendering = mdit.render(md)
 
-    # If word wrap is changed, add a second pass of rendering.
-    # Some escapes will be different depending on word wrap, so
-    # rendering after 1st and 2nd pass will be different. Rendering
-    # twice seems like the easiest way to achieve stable formatting.
+    # Some escapes depend on where word wrapping split a paragraph, so one
+    # render pass can produce text that a second pass formats differently.
+    # Render until the output stops changing, so that a file mdformat just
+    # wrote is always reported as formatted by `--check`. Two passes are
+    # enough for most inputs; a few need a third.
     if options.get("wrap", DEFAULT_OPTS["wrap"]) != "keep":
-        rendering = mdit.render(rendering)
+        for _ in range(3):
+            new_rendering = mdit.render(rendering)
+            if new_rendering == rendering:
+                break
+            rendering = new_rendering
 
     return rendering
 
