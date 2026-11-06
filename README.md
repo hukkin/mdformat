@@ -12,17 +12,14 @@
 </div>
 
 <!-- start mini-description -->
-
 Mdformat is an opinionated Markdown formatter
 that can be used to enforce a consistent style in Markdown files.
 Mdformat is a Unix-style command-line tool as well as a Python library.
 
 <!-- end mini-description -->
-
 Find out more in the [docs](https://mdformat.readthedocs.io).
 
 <!-- start installing -->
-
 ## Installing
 
 Install with [CommonMark](https://spec.commonmark.org/current/) support:
@@ -39,9 +36,7 @@ pipx inject mdformat mdformat-gfm
 ```
 
 <!-- end installing -->
-
 <!-- start cli-usage -->
-
 ## Command line usage
 
 ### Format files
@@ -114,7 +109,6 @@ options:
 The `--exclude` option is only available on Python 3.13+.
 
 <!-- end cli-usage -->
-
 ## Documentation
 
 This README merely provides a quickstart guide for the command line interface.
@@ -131,7 +125,6 @@ Here's a few pointers to get you started:
 - [Changelog](https://mdformat.readthedocs.io/en/stable/users/changelog.html)
 
 <!-- start faq -->
-
 ## Frequently Asked Questions
 
 ### Why does mdformat backslash escape special syntax specific to MkDocs / Hugo / Obsidian / GitHub / some other Markdown engine?

@@ -431,6 +431,59 @@ text
 text
 .
 
+Do not separate HTML comments from the following block
+.
+<!-- Space: MyGroup -->
+<!-- Parent: parent-->
+<!-- Parent: subparent-->
+<!-- Title: title-->
+<!-- markdownlint-disable-next-line MD013 -->
+A line that must stay directly below the comment.
+.
+<!-- Space: MyGroup -->
+<!-- Parent: parent-->
+<!-- Parent: subparent-->
+<!-- Title: title-->
+<!-- markdownlint-disable-next-line MD013 -->
+A line that must stay directly below the comment.
+.
+
+Do not separate HTML comments from the following block in a block quote
+.
+> <!-- markdownlint-disable-next-line MD013 -->
+> A line that must stay directly below the comment.
+.
+> <!-- markdownlint-disable-next-line MD013 -->
+> A line that must stay directly below the comment.
+.
+
+Separate HTML blocks that are not comments from the following block
+.
+<div>
+</div>
+
+text
+.
+<div>
+</div>
+
+text
+.
+
+Do not remove blank lines that make a list loose
+.
+- <!-- one -->
+  <!-- two -->
+
+  paragraph
+.
+- <!-- one -->
+
+  <!-- two -->
+
+  paragraph
+.
+
 sort digit references numerically
 .
 (References)[1] (should)[2] (sort)[10] (numerically)[word], if[🤪] they[⅕] are[𐩂] digits[!].

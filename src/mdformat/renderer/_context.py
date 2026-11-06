@@ -50,13 +50,37 @@ RE_UNICODE_WS_OR_WRAP_POINT = re.compile(
 )
 
 
-def make_render_children(separator: str) -> Render:
+def _is_html_comment(node: RenderTreeNode) -> bool:
+    """Return `True` if the node is an HTML block that starts a comment."""
+    return node.type == "html_block" and node.content.lstrip().startswith("<!--")
+
+
+def make_render_children(
+    separator: str, *, attach_html_comments: bool = True
+) -> Render:
     def render_children(
         node: RenderTreeNode,
         context: RenderContext,
     ) -> str:
-        render_outputs = (child.render(context) for child in node.children)
-        return separator.join(out for out in render_outputs if out)
+        render_outputs = [
+            (child, out) for child in node.children if (out := child.render(context))
+        ]
+        text = ""
+        prev_child: RenderTreeNode | None = None
+        for child, out in render_outputs:
+            if prev_child is not None:
+                # HTML comments often modify the block that follows them
+                # (e.g. markdownlint directives or Confluence metadata), so
+                # a single newline keeps them attached to that block. This
+                # does not change parsing, as comments end at "-->" and
+                # therefore do not require a following blank line.
+                if attach_html_comments and _is_html_comment(prev_child):
+                    text += "\n"
+                else:
+                    text += separator
+            text += out
+            prev_child = child
+        return text
 
     return render_children
 
@@ -480,7 +504,12 @@ def list_item(node: RenderTreeNode, context: RenderContext) -> str:
     added in `bullet_list` and `ordered_list` renderers.
     """
     block_separator = "\n" if is_tight_list_item(node) else "\n\n"
-    text = make_render_children(block_separator)(node, context)
+    # A blank line between two blocks in a list item affects whether the
+    # list is tight or loose, so HTML comments must not change the
+    # separator here.
+    text = make_render_children(block_separator, attach_html_comments=False)(
+        node, context
+    )
 
     if not text.strip():
         return ""
