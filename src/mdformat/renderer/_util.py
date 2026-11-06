@@ -104,7 +104,9 @@ def get_list_marker_type(node: RenderTreeNode) -> str:
             return primary_marker if consecutive_lists_count % 2 else secondary_marker
 
 
-def escape_asterisk_emphasis(text: str) -> str:
+def escape_asterisk_emphasis(
+    text: str, *, before: str | None = None, after: str | None = None
+) -> str:
     """Escape asterisks to prevent unexpected emphasis/strong emphasis.
 
     Currently we escape all asterisks unless both previous and next
@@ -121,8 +123,8 @@ def escape_asterisk_emphasis(text: str) -> str:
         if current_char != "*":
             escaped_text += current_char
             continue
-        prev_char = text[i - 1] if (i - 1) >= 0 else None
-        next_char = text[i + 1] if (i + 1) < text_length else None
+        prev_char = text[i - 1] if (i - 1) >= 0 else before
+        next_char = text[i + 1] if (i + 1) < text_length else after
         if (
             prev_char in codepoints.UNICODE_WHITESPACE
             and next_char in codepoints.UNICODE_WHITESPACE
@@ -134,7 +136,9 @@ def escape_asterisk_emphasis(text: str) -> str:
     return escaped_text
 
 
-def escape_underscore_emphasis(text: str) -> str:
+def escape_underscore_emphasis(
+    text: str, *, before: str | None = None, after: str | None = None
+) -> str:
     """Escape underscores to prevent unexpected emphasis/strong emphasis.
     Currently we escape all underscores unless:
 
@@ -158,8 +162,8 @@ def escape_underscore_emphasis(text: str) -> str:
         if current_char != "_":
             escaped_text += current_char
             continue
-        prev_char = text[i - 1] if (i - 1) >= 0 else None
-        next_char = text[i + 1] if (i + 1) < text_length else None
+        prev_char = text[i - 1] if (i - 1) >= 0 else before
+        next_char = text[i + 1] if (i + 1) < text_length else after
         if (
             prev_char in codepoints.UNICODE_WHITESPACE
             and next_char in codepoints.UNICODE_WHITESPACE

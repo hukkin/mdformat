@@ -128,8 +128,19 @@ def text(node: RenderTreeNode, context: RenderContext) -> str:
     # This escape has to be first, else we start multiplying backslashes.
     text = text.replace("\\", "\\\\")
 
-    text = escape_asterisk_emphasis(text)  # Escape emphasis/strong marker.
-    text = escape_underscore_emphasis(text)  # Escape emphasis/strong marker.
+    # Soft breaks become whitespace during wrapping. Treat them as whitespace
+    # here too, so wrapping a literal marker does not change its escaping on
+    # the next formatting pass.
+    before = after = None
+    if context.do_wrap and _in_block("paragraph", node):
+        previous = node.previous_sibling
+        following = node.next_sibling
+        if previous and previous.type == "softbreak":
+            before = " "
+        if following and following.type == "softbreak":
+            after = " "
+    text = escape_asterisk_emphasis(text, before=before, after=after)
+    text = escape_underscore_emphasis(text, before=before, after=after)
     # Escape link label and link ref enclosures
     text = escape_square_brackets(text, context.env["used_refs"])
     text = escape_less_than_sign(text)  # Escape URI enclosure and HTML.
