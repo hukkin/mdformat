@@ -197,6 +197,11 @@ Mdformat applies consistent whitespace across the board:
 - Indent contents of block quotes and list items consistently
 - Always separate blocks with a single empty line
   (an exception being tight lists where the separator is a single newline character)
+- Keep HTML comments attached to the block that follows them
+  with a single newline, as they often modify it
+  (e.g. `<!-- markdownlint-disable-next-line -->`).
+  Inside list items the empty line is kept,
+  as it can determine whether the list is tight or loose
 - Always end the document in a single newline character
   (an exception being an empty document)
 
