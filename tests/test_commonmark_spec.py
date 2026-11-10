@@ -122,3 +122,24 @@ def test_commonmark_spec(wrap, number, entry):
     md_2nd_pass = mdformat.text(md_new, options=options)
     assert is_md_equal(md_original, md_new, options=options)
     assert md_new == md_2nd_pass
+
+
+@pytest.mark.parametrize("width", [3, 5, 8, 12])
+@pytest.mark.parametrize(
+    "source",
+    [
+        "A * * b\n",
+        "_ _ _ _ a\n\na------\n\n---a---\n",
+        "> A * * b\n",
+        "- A _ _ b\n",
+        "before *emphasis* after _ _ end\n",
+        "before **strong** after * * end\n",
+        "A *\\\n* b\n",
+        "A _\\\n_ b\n",
+    ],
+)
+def test_wrap_literal_marker_boundaries(source, width):
+    options = {"wrap": width}
+    formatted = mdformat.text(source, options=options)
+    assert is_md_equal(source, formatted)
+    assert mdformat.text(formatted, options=options) == formatted
