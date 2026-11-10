@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 from unittest.mock import patch
@@ -90,6 +91,22 @@ def test_invalid_file(capsys):
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
     assert "does not exist" in captured.err
+
+
+def test_non_utf8_file(tmp_path, capsys):
+    file_path = tmp_path / "test_markdown.md"
+    file_path.write_bytes("Hällö wörld\n".encode("latin-1"))
+    assert run((str(file_path),)) == 1
+    captured = capsys.readouterr()
+    assert "not valid UTF-8" in captured.err
+
+
+def test_non_utf8_stdin(monkeypatch, capsys):
+    buffer = io.BytesIO("Hällö wörld\n".encode("latin-1"))
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(buffer))
+    assert run(("-",)) == 1
+    captured = capsys.readouterr()
+    assert "not valid UTF-8" in captured.err
 
 
 @pytest.mark.skipif(os.name == "nt", reason="No os.mkfifo on windows")
