@@ -119,12 +119,24 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
             return 1
         if path:
             path_str = str(path)
-            # Unlike `path.read_text(encoding="utf-8")`, this preserves
-            # line ending type.
-            original_str = path.read_bytes().decode()
         else:
             path_str = "-"
-            original_str = sys.stdin.buffer.read().decode()
+        try:
+            if path:
+                # Unlike `path.read_text(encoding="utf-8")`, this preserves
+                # line ending type.
+                original_str = path.read_bytes().decode()
+            else:
+                original_str = sys.stdin.buffer.read().decode()
+        except UnicodeDecodeError:
+            print_error(
+                f'Could not decode "{path_str}".',
+                paragraphs=[
+                    "The input is not valid UTF-8. "
+                    "mdformat only supports UTF-8 encoded files."
+                ],
+            )
+            return 1
 
         # Lazy import to improve module import time
         from mdformat.renderer import LOGGER as RENDERER_LOGGER
