@@ -143,10 +143,19 @@ def text(node: RenderTreeNode, context: RenderContext) -> str:
     # the markdown structure. Replace two or more consecutive newlines
     # with newline character's decimal reference.
     text = text.replace("\n\n", "&#10;&#10;")
+    previous_sibling = node.previous_sibling
+    if (
+        text.startswith("\n")
+        and previous_sibling
+        and previous_sibling.type in {"softbreak", "hardbreak"}
+    ):
+        text = "&#10;" + text[1:]
+    next_sibling = node.next_sibling
+    if text.endswith("\n") and next_sibling and next_sibling.type == "softbreak":
+        text = text[:-1] + "&#10;"
 
     # If the last character is a "!" and the token next up is a link, we
     # have to escape the "!" or else the link will be interpreted as image.
-    next_sibling = node.next_sibling
     if text.endswith("!") and next_sibling and next_sibling.type == "link":
         text = text[:-1] + "\\!"
 

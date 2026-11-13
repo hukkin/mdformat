@@ -91,6 +91,10 @@ EXTRA_CASES = (
         "\u2005foo\u2005\n"
         "foo\n",
     },
+    {
+        "name": "newline character reference next to a line break",
+        "md": "foo&#10;\nbar\n&#10;baz\\\n&#10;qux\n",
+    },
 )
 ALL_CASES = EXTRA_CASES + SPECTESTS_CASES
 
