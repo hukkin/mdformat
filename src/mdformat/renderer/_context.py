@@ -68,7 +68,8 @@ def hr(node: RenderTreeNode, context: RenderContext) -> str:
 
 def code_inline(node: RenderTreeNode, context: RenderContext) -> str:
     code = node.content
-    all_chars_are_whitespace = not code.strip()
+    # CommonMark only takes a space (not any whitespace) in code spans into account
+    all_chars_are_whitespace = not code.strip(" ")
     longest_backtick_seq = longest_consecutive_sequence(code, "`")
     if longest_backtick_seq:
         separator = "`" * (longest_backtick_seq + 1)
@@ -326,7 +327,9 @@ def blockquote(node: RenderTreeNode, context: RenderContext) -> str:
     marker = "> "
     with context.indented(len(marker)):
         text = make_render_children(separator="\n\n")(node, context)
-        lines = text.splitlines()
+        # Not `str.splitlines`, it also splits on e.g. U+2028, which markdown-it
+        # keeps inside a line.
+        lines = text.split("\n") if text else []
         if not lines:
             return ">"
         quoted_lines = (f"{marker}{line}" if line else ">" for line in lines)
@@ -414,8 +417,10 @@ def paragraph(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: C90
     lines = text.split("\n")
     for i in range(len(lines)):
         # Strip whitespace to prevent issues like a line starting tab that is
-        # interpreted as start of a code block.
-        lines[i] = lines[i].strip()
+        # interpreted as start of a code block. Only space and tab are
+        # stripped, other characters that `str.strip` removes (e.g. U+2028) are
+        # not whitespace in CommonMark and would be lost from the content.
+        lines[i] = lines[i].strip(" \t")
 
         # If a line looks like an ATX heading, escape the first hash.
         if re.match(r"#{1,6}( |\t|$)", lines[i]):
