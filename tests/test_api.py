@@ -64,6 +64,24 @@ def test_output_is_equal(input_):
 
 
 @pytest.mark.parametrize(
+    "char",
+    [
+        pytest.param("\u2028", id="U+2028 LINE SEPARATOR"),
+        pytest.param("\u2029", id="U+2029 PARAGRAPH SEPARATOR"),
+        pytest.param("\u0085", id="U+0085 NEXT LINE"),
+        pytest.param("\u001c", id="U+001C FILE SEPARATOR"),
+    ],
+)
+def test_unicode_line_edge_chars_preserved(char):
+    # Regression test for https://github.com/hukkin/mdformat/issues/606:
+    # Python's str.strip() strips these characters, but they are not
+    # whitespace in CommonMark, so they are literal content that must
+    # survive formatting.
+    assert mdformat.text(f"a{char}\nb\n") == f"a{char}\nb\n"
+    assert mdformat.text(f"a\n{char}b\n") == f"a\n{char}b\n"
+
+
+@pytest.mark.parametrize(
     "input_",
     [
         pytest.param("\x1c\n\na"),

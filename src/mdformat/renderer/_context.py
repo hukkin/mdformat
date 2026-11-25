@@ -414,8 +414,11 @@ def paragraph(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: C90
     lines = text.split("\n")
     for i in range(len(lines)):
         # Strip whitespace to prevent issues like a line starting tab that is
-        # interpreted as start of a code block.
-        lines[i] = lines[i].strip()
+        # interpreted as start of a code block. Only space and tab are
+        # stripped: other characters that Python considers whitespace
+        # (e.g. U+2028 or U+0085) are literal content in CommonMark and
+        # must be preserved.
+        lines[i] = lines[i].strip(" \t")
 
         # If a line looks like an ATX heading, escape the first hash.
         if re.match(r"#{1,6}( |\t|$)", lines[i]):
