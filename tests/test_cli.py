@@ -422,6 +422,38 @@ def test_exclude(tmp_path):
             assert file_path_1.read_text() == FORMATTED_MARKDOWN
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 13), reason="'exclude' only possible on 3.13+"
+)
+def test_exclude_cli_patterns_add_to_config(tmp_path):
+    (tmp_path / ".mdformat.toml").write_text("exclude = ['vendor/**']")
+    vendor_file = tmp_path / "vendor" / "file.md"
+    modules_file = tmp_path / "node_modules" / "file.md"
+    other_file = tmp_path / "other.md"
+    vendor_file.parent.mkdir()
+    modules_file.parent.mkdir()
+    for path in (vendor_file, modules_file, other_file):
+        path.write_text(UNFORMATTED_MARKDOWN)
+
+    with patch("mdformat._cli.Path.cwd", return_value=tmp_path):
+        ret = run(
+            [
+                "--exclude",
+                "node_modules/**",
+                str(vendor_file),
+                str(modules_file),
+                str(other_file),
+            ]
+        )
+
+    assert ret == 0
+    # the config pattern still applies...
+    assert vendor_file.read_text() == UNFORMATTED_MARKDOWN
+    # ...and the command line pattern adds to it instead of replacing it
+    assert modules_file.read_text() == UNFORMATTED_MARKDOWN
+    assert other_file.read_text() == FORMATTED_MARKDOWN
+
+
 def test_codeformatters(tmp_path, monkeypatch):
     monkeypatch.setitem(CODEFORMATTERS, "enabled-lang", lambda code, info: "dumdum")
     monkeypatch.setitem(CODEFORMATTERS, "disabled-lang", lambda code, info: "dumdum")

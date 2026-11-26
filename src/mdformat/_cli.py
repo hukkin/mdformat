@@ -65,7 +65,12 @@ def run(cli_args: Sequence[str], cache_toml: bool = True) -> int:  # noqa: C901
                 opts["plugin"][plugin_id] = plugin_opts
 
         if sys.version_info >= (3, 13):  # pragma: >=3.13 cover
-            if is_excluded(path, opts["exclude"], toml_path, "exclude" in cli_opts):
+            if is_excluded(
+                path,
+                toml_opts.get("exclude", ()),
+                toml_path,
+                cli_core_opts.get("exclude", ()),
+            ):
                 continue
         else:  # pragma: <3.13 cover
             if "exclude" in toml_opts:
@@ -358,24 +363,35 @@ def resolve_file_paths(path_strings: Iterable[str]) -> list[None | Path]:
 
 def is_excluded(  # pragma: >=3.13 cover
     path: Path | None,
-    patterns: list[str],
+    toml_patterns: Sequence[str],
     toml_path: Path | None,
-    excludes_from_cli: bool,
+    cli_patterns: Sequence[str],
 ) -> bool:
+    """Return whether *path* matches a config or command line exclude pattern.
+
+    Config patterns are relative to the config file and command line patterns
+    are relative to the working directory, so both lists are checked against
+    their own root. Command line patterns add to the config instead of
+    replacing it.
+    """
     if not path:
         return False
 
-    if not excludes_from_cli and toml_path:
-        exclude_root = toml_path.parent
-    else:
-        exclude_root = Path.cwd()
+    if toml_path:
+        try:
+            relative_path = path.relative_to(toml_path.parent)
+        except ValueError:
+            pass
+        else:
+            if any(relative_path.full_match(p) for p in toml_patterns):
+                return True
 
     try:
-        relative_path = path.relative_to(exclude_root)
+        relative_path = path.relative_to(Path.cwd())
     except ValueError:
         return False
 
-    return any(relative_path.full_match(pattern) for pattern in patterns)
+    return any(relative_path.full_match(p) for p in cli_patterns)
 
 
 def _normalize_path(path: Path) -> Path:
